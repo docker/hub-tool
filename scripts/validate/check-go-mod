@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -eu
+
+go mod tidy
+DIFF=$(git status --porcelain -- go.mod go.sum)
+
+if [ "$DIFF" ]; then
+    echo
+    echo "These files were changed:"
+    echo
+    echo "$DIFF"
+    echo
+    exit 1
+else
+    echo "go.mod is correct"
+fi;
