@@ -1,0 +1,69 @@
+name: Build PR
+on: [push]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+        id: go
+
+      - name: Checkout code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Check license headers
+        run: make validate
+
+      - name: Run golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b . v1.27.0
+          ./golangci-lint run
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+      E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
+      E2E_HUB_TOKEN_TOKEN: ${{ secrets.E2E_HUB_TOKEN_TOKEN }}
+    steps:
+      - name: Docker version
+        run: docker version
+
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+        id: go
+
+      - name: Checkout code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Golang cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build Cross
+        run: make cross
+
+      - name: Unit Tests
+        run: make test-unit
+
+      - name: End-to-end Tests
+        run: make e2e
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker-hub
+          path: ./dist/
