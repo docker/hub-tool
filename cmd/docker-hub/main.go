@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,13 +28,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-cli-plugin/internal/commands"
 )
 
 func main() {
 	ctx, closeFunc := newSigContext()
 	defer closeFunc()
 	plugin.Run(func(dockerCli command.Cli) *cobra.Command {
-		cmd := newHubCmd(ctx, dockerCli)
+		cmd := commands.NewHubCmd(ctx, dockerCli)
 		originalPreRun := cmd.PersistentPreRunE
 		cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 			if err := plugin.PersistentPreRunE(cmd, args); err != nil {
@@ -52,35 +52,6 @@ func main() {
 		Vendor:        "Docker Inc.",
 		Version:       internal.Version,
 	})
-}
-
-type options struct {
-	showVersion bool
-}
-
-func newHubCmd(_ context.Context, _ command.Cli) *cobra.Command {
-	var flags options
-	cmd := &cobra.Command{
-		Short:       "Docker Hub",
-		Long:        `A tool to manage your Docker Hub images`,
-		Use:         "hub",
-		Annotations: map[string]string{},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if flags.showVersion {
-				return runVersion()
-			}
-			return nil
-		},
-	}
-	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
-
-	return cmd
-}
-
-func runVersion() error {
-	fmt.Println("Version:   ", internal.Version)
-	fmt.Println("Git commit:", internal.GitCommit)
-	return nil
 }
 
 func newSigContext() (context.Context, func()) {
