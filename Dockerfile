@@ -29,8 +29,8 @@ WORKDIR /go/src/github.com/docker/hub-cli-plugin
 
 # cache go vendoring
 COPY go.* ./
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    go mod download
+RUN --mount=type=cache,target=/go/pkg \
+    go mod download -x
 COPY . .
 
 ####
@@ -45,6 +45,7 @@ FROM builder AS lint
 ENV CGO_ENABLED=0
 COPY --from=lint-base /usr/bin/golangci-lint /usr/bin/golangci-lint
 RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
     --mount=type=cache,target=/root/.cache/golangci-lint \
     make -f builder.Makefile lint
 
@@ -61,6 +62,7 @@ FROM builder AS build
 ARG TARGETOS
 ARG TARGETARCH
 RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
     GOOS=${TARGETOS} \
     GOARCH=${TARGETARCH} \
     make -f builder.Makefile build
@@ -78,6 +80,7 @@ FROM builder AS cross-build
 ARG TAG_NAME
 ENV TAG_NAME=$TAG_NAME
 RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
     make -f builder.Makefile cross
 
 ####
