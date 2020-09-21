@@ -44,9 +44,14 @@ var (
 			if len(t.Images) > 0 {
 				return t.Images[0].Digest
 			}
-			return "-"
+			return ""
 		}},
-		{"LAST UPDATE", func(t hub.Tag) string { return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated))) }},
+		{"LAST UPDATE", func(t hub.Tag) string {
+			if t.LastUpdated.Nanosecond() == 0 {
+				return ""
+			}
+			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
+		}},
 		{"SIZE", func(t hub.Tag) string {
 			size := t.FullSize
 			if len(t.Images) > 0 {
