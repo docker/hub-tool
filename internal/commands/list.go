@@ -57,6 +57,19 @@ var (
 			}
 			return units.HumanSize(float64(size))
 		}},
+		{
+			"OS/ARCH", func(t hub.Tag) string {
+				var platforms []string
+				for _, image := range t.Images {
+					platform := fmt.Sprintf("%s/%s", image.Os, image.Architecture)
+					if image.Variant != "" {
+						platform += "/" + image.Variant
+					}
+					platforms = append(platforms, platform)
+				}
+				return strings.Join(platforms, ",")
+			},
+		},
 	}
 )
 
