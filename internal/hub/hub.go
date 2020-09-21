@@ -33,6 +33,8 @@ const (
 	LoginURL = "/v2/users/login"
 	// TagsURL path to the Hub provider token generation URL
 	TagsURL = "/v2/repositories/%s/tags/?page_size=25&page=1"
+
+	tagsPerPage = 25
 )
 
 //Client sends authenticated calls to the Hub API
@@ -65,24 +67,45 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", h.domain+fmt.Sprintf(TagsURL, repoPath), nil)
+	u, err := url.Parse(h.domain + fmt.Sprintf(TagsURL, repoPath))
+	if err != nil {
+		return nil, err
+	}
+	q := url.Values{}
+	q.Add("page_size", fmt.Sprintf("%v", tagsPerPage))
+	q.Add("page", "1")
+	u.RawQuery = q.Encode()
+
+	tags, next, err := h.getTagsPage(u.String())
 	if err != nil {
 		return nil, err
 	}
 
-	q := url.Values{}
-	q.Add("page_size", "25")
-	q.Add("page", "1")
-	req.URL.RawQuery = q.Encode()
+	for next != "" {
+		pageTags, n, err := h.getTagsPage(next)
+		if err != nil {
+			return nil, err
+		}
+		next = n
+		tags = append(tags, pageTags...)
+	}
 
+	return tags, nil
+}
+
+func (h *Client) getTagsPage(url string) ([]Tag, string, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, "", err
+	}
 	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
 	response, err := doRequest(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var hubResponse hubTagResponse
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var tags []Tag
 	for _, result := range hubResponse.Results {
@@ -95,8 +118,7 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 		}
 		tags = append(tags, tag)
 	}
-
-	return tags, nil
+	return tags, hubResponse.Next, nil
 }
 
 func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
