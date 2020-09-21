@@ -17,12 +17,13 @@ require (
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/docker/cli v0.0.0-20200227165822-2298e6a3fe24
-	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c // indirect
+	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go v1.5.1-1 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/docker/go-units v0.4.0
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
