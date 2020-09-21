@@ -40,9 +40,23 @@ var (
 		value  func(t hub.Tag) string
 	}{
 		{"TAG", func(t hub.Tag) string { return t.Name }},
-		{"DIGEST", func(t hub.Tag) string { return t.Images[0].Digest }},
+		{"DIGEST", func(t hub.Tag) string {
+			if len(t.Images) > 0 {
+				return t.Images[0].Digest
+			}
+			return "-"
+		}},
 		{"LAST UPDATE", func(t hub.Tag) string { return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated))) }},
-		{"SIZE", func(t hub.Tag) string { return units.HumanSize(float64(t.Images[0].Size)) }},
+		{"SIZE", func(t hub.Tag) string {
+			size := t.FullSize
+			if len(t.Images) > 0 {
+				size = 0
+				for _, image := range t.Images {
+					size += image.Size
+				}
+			}
+			return units.HumanSize(float64(size))
+		}},
 	}
 )
 
