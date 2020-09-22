@@ -35,30 +35,71 @@ import (
 )
 
 var (
-	listColumns = []struct {
-		header string
-		value  func(t hub.Tag) string
-	}{
+	defaultColumns = []column{
 		{"TAG", func(t hub.Tag) string { return t.Name }},
-		{"DIGEST", func(t hub.Tag) string { return t.Images[0].Digest }},
-		{"LAST UPDATE", func(t hub.Tag) string { return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated))) }},
-		{"SIZE", func(t hub.Tag) string { return units.HumanSize(float64(t.Images[0].Size)) }},
+		{"DIGEST", func(t hub.Tag) string {
+			if len(t.Images) > 0 {
+				return t.Images[0].Digest
+			}
+			return ""
+		}},
+		{"LAST UPDATE", func(t hub.Tag) string {
+			if t.LastUpdated.Nanosecond() == 0 {
+				return ""
+			}
+			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
+		}},
+		{"SIZE", func(t hub.Tag) string {
+			size := t.FullSize
+			if len(t.Images) > 0 {
+				size = 0
+				for _, image := range t.Images {
+					size += image.Size
+				}
+			}
+			return units.HumanSize(float64(size))
+		}},
+	}
+	platformColumn = column{
+		"OS/ARCH",
+		func(t hub.Tag) string {
+			var platforms []string
+			for _, image := range t.Images {
+				platform := fmt.Sprintf("%s/%s", image.Os, image.Architecture)
+				if image.Variant != "" {
+					platform += "/" + image.Variant
+				}
+				platforms = append(platforms, platform)
+			}
+			return strings.Join(platforms, ",")
+		},
 	}
 )
 
+type column struct {
+	header string
+	value  func(t hub.Tag) string
+}
+
+type listOptions struct {
+	platforms bool
+}
+
 func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+	var opts listOptions
 	cmd := &cobra.Command{
-		Use:   "ls NAME",
+		Use:   "ls [OPTION] REPOSITORY",
 		Short: "List all the images in a repository",
 		Args:  cli.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, args)
+			return runList(ctx, dockerCli, opts, args[0])
 		},
 	}
+	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
+func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repository string) error {
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
@@ -66,21 +107,25 @@ func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
 	if err != nil {
 		return err
 	}
-	tags, err := client.GetTags(args[0])
+	tags, err := client.GetTags(repository)
 	if err != nil {
 		return err
 	}
 
+	if opts.platforms {
+		defaultColumns = append(defaultColumns, platformColumn)
+	}
+
 	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
 	var headers []string
-	for _, column := range listColumns {
+	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
 	fmt.Fprintln(w, strings.Join(headers, "\t"))
 
 	for _, tag := range tags {
 		var values []string
-		for _, column := range listColumns {
+		for _, column := range defaultColumns {
 			values = append(values, column.value(tag))
 		}
 		fmt.Fprintln(w, strings.Join(values, "\t"))
