@@ -47,7 +47,6 @@ const (
 type Client struct {
 	domain string
 	token  string
-	user   string
 }
 
 //AuthResolver resolves authentication configuration depending the registry
@@ -65,13 +64,12 @@ func NewClient(authResolver AuthResolver) (*Client, error) {
 	return &Client{
 		domain: hubInstance.APIHubBaseURL,
 		token:  token,
-		user:   hubAuthConfig.Username,
 	}, nil
 }
 
 //GetRepositories lists all the repositories a user can access
-func (h *Client) GetRepositories() ([]Repository, error) {
-	u, err := url.Parse(h.domain + fmt.Sprintf(RepositoriesURL, h.user))
+func (h *Client) GetRepositories(account string) ([]Repository, error) {
+	u, err := url.Parse(h.domain + fmt.Sprintf(RepositoriesURL, account))
 	if err != nil {
 		return nil, err
 	}
