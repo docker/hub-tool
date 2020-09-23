@@ -17,31 +17,70 @@
 package repo
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
+	"github.com/docker/distribution/reference"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
-type rmiOptions struct {
+type rmOptions struct {
 	force bool
 }
 
 func newRmCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
-	var opts rmiOptions
+	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:   "rm REPOSITORY:TAG",
-		Short: "Delete a tag in a repository",
+		Use:   "rm [OPTIONS] REPOSITORY",
+		Short: "Delete a repository",
 		Args:  cli.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runRm(ctx, dockerCli, opts, args[0])
 		},
 	}
-	cmd.Flags().BoolVar(&opts.force, "platforms", false, "List all available platforms per tag")
+	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the repository")
 	return cmd
 }
 
-func runRm(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image string) error {
+func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, repository string) error {
+	ref, err := reference.Parse(repository)
+	if err != nil {
+		return err
+	}
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return fmt.Errorf("invalid reference: repository not specified")
+	}
+
+	if !opts.force {
+		fmt.Println("Please type the name of your repository to confirm deletion:", namedRef.Name())
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		input = strings.ToLower(strings.TrimSpace(input))
+		if input != namedRef.Name() {
+			return fmt.Errorf("%q differs from your repository name, deletion aborted", input)
+		}
+	}
+
+	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
+		return command.ResolveAuthConfig(ctx, dockerCli, hub)
+	}
+	client, err := hub.NewClient(authResolver)
+	if err != nil {
+		return err
+	}
+	if err := client.RemoveRepository(namedRef.Name()); err != nil {
+		return err
+	}
+	fmt.Println("Deleted", repository)
 	return nil
 }
