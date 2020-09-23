@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package commands
+package tag
 
 import (
 	"bufio"
@@ -37,21 +37,21 @@ type rmiOptions struct {
 	force bool
 }
 
-func newRmiCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newRmCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	var opts rmiOptions
 	cmd := &cobra.Command{
-		Use:   "rmi REPOSITORY:TAG",
+		Use:   "rm REPOSITORY:TAG",
 		Short: "Delete a tag in a repository",
 		Args:  cli.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runRmi(ctx, dockerCli, opts, args[0])
+			return runRm(ctx, dockerCli, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVar(&opts.force, "platforms", false, "List all available platforms per tag")
 	return cmd
 }
 
-func runRmi(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image string) error {
+func runRm(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image string) error {
 	ref, err := reference.Parse(image)
 	if err != nil {
 		return err
