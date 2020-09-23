@@ -47,7 +47,10 @@ func NewHubCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
 
-	cmd.AddCommand(newListCmd(ctx, dockerCli))
+	cmd.AddCommand(
+		newListCmd(ctx, dockerCli),
+		newRmiCmd(ctx, dockerCli),
+	)
 	return cmd
 }
 
