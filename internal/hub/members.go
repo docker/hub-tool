@@ -27,12 +27,14 @@ import (
 const (
 	//MembersURL path to the Hub API listing the members in an organization
 	MembersURL = "/v2/orgs/%s/members/"
+	//MembersPerTeamURL path to the Hub API listing the members in a team
+	MembersPerTeamURL = "/v2/orgs/%s/groups/%s/members/"
 )
 
 //Member is a user part of an organization
 type Member struct {
-	Username string
-	FullName string
+	Username string `json:"username"`
+	FullName string `json:"full_name"`
 }
 
 //GetMembers lists all the members in an organization
@@ -60,6 +62,25 @@ func (h *Client) GetMembers(organization string) ([]Member, error) {
 		members = append(members, pageMembers...)
 	}
 
+	return members, nil
+}
+
+// GetMembersPerTeam returns the members of a team in an organization
+func (h *Client) GetMembersPerTeam(organization, team string) ([]Member, error) {
+	u := h.domain + fmt.Sprintf(MembersPerTeamURL, organization, team)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	response, err := doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var members []Member
+	if err := json.Unmarshal(response, &members); err != nil {
+		return nil, err
+	}
 	return members, nil
 }
 

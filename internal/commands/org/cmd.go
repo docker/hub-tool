@@ -35,6 +35,7 @@ func NewOrgCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	cmd.AddCommand(
 		newListCmd(ctx, dockerCli),
 		newMembersCmd(ctx, dockerCli),
+		newTeamsCmd(ctx, dockerCli),
 	)
 	return cmd
 }

@@ -32,6 +32,7 @@ const (
 type Team struct {
 	Name        string
 	Description string
+	Members     []Member
 }
 
 //GetTeams lists all the teams in an organization
@@ -45,13 +46,13 @@ func (h *Client) GetTeams(organization string) ([]Team, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	teams, next, err := h.getTeamsPage(u.String())
+	teams, next, err := h.getTeamsPage(u.String(), organization)
 	if err != nil {
 		return nil, err
 	}
 
 	for next != "" {
-		pageTeams, n, err := h.getTeamsPage(next)
+		pageTeams, n, err := h.getTeamsPage(next, organization)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +63,7 @@ func (h *Client) GetTeams(organization string) ([]Team, error) {
 	return teams, nil
 }
 
-func (h *Client) getTeamsPage(url string) ([]Team, string, error) {
+func (h *Client) getTeamsPage(url, organization string) ([]Team, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
@@ -78,9 +79,14 @@ func (h *Client) getTeamsPage(url string) ([]Team, string, error) {
 	}
 	var teams []Team
 	for _, result := range hubResponse.Results {
+		members, err := h.GetMembersPerTeam(organization, result.Name)
+		if err != nil {
+			return nil, "", err
+		}
 		team := Team{
 			Name:        result.Name,
 			Description: result.Description,
+			Members:     members,
 		}
 		teams = append(teams, team)
 	}
