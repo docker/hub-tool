@@ -37,6 +37,8 @@ const (
 	DeleteTagURL = "/v2/repositories/%s/tags/%s/"
 	// RepositoriesURL path to the Hub API listing the repositories
 	RepositoriesURL = "/v2/repositories/%s/"
+	// DeleteRepositoryURL path to the Hub API to remove a repository
+	DeleteRepositoryURL = "/v2/repositories/%s/"
 
 	itemsPerPage = 25
 )
@@ -131,7 +133,17 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 //RemoveTag removes a tag in a repository on Hub
 func (h *Client) RemoveTag(repository, tag string) error {
 	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteTagURL, repository, tag), nil)
-	fmt.Println(req.URL)
+	if err != nil {
+		return err
+	}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	_, err = doRequest(req)
+	return err
+}
+
+//RemoveRepository removes a repository on Hub
+func (h *Client) RemoveRepository(repository string) error {
+	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteRepositoryURL, repository), nil)
 	if err != nil {
 		return err
 	}
@@ -233,7 +245,7 @@ func doRequest(req *http.Request) ([]byte, error) {
 	if resp.Body != nil {
 		defer resp.Body.Close() //nolint:errcheck
 	}
-	if resp.StatusCode < 200 && resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)

@@ -33,25 +33,25 @@ import (
 	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
-type rmiOptions struct {
+type rmOptions struct {
 	force bool
 }
 
 func newRmCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
-	var opts rmiOptions
+	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:   "rm REPOSITORY:TAG",
+		Use:   "rm [OPTIONS] REPOSITORY:TAG",
 		Short: "Delete a tag in a repository",
 		Args:  cli.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runRm(ctx, dockerCli, opts, args[0])
 		},
 	}
-	cmd.Flags().BoolVar(&opts.force, "platforms", false, "List all available platforms per tag")
+	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the tag")
 	return cmd
 }
 
-func runRm(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image string) error {
+func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, image string) error {
 	ref, err := reference.Parse(image)
 	if err != nil {
 		return err
