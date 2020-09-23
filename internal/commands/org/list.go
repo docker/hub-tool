@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package repo
+package org
 
 import (
 	"context"
@@ -22,13 +22,11 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
@@ -36,52 +34,40 @@ import (
 
 var (
 	defaultColumns = []column{
-		{"REPOSITORY", func(r hub.Repository) string { return r.Name }},
-		{"DESCRIPTION", func(r hub.Repository) string { return r.Description }},
-		{"LAST UPDATE", func(r hub.Repository) string {
-			if r.LastUpdated.Nanosecond() == 0 {
-				return ""
-			}
-			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(r.LastUpdated)))
-		}},
-		{"PULLS", func(r hub.Repository) string { return fmt.Sprintf("%v", r.PullCount) }},
-		{"STARS", func(r hub.Repository) string { return fmt.Sprintf("%v", r.StarCount) }},
-		{"PRIVATE", func(r hub.Repository) string { return fmt.Sprintf("%v", r.IsPrivate) }},
+		{"NAMESPACE", func(o hub.Organization) string { return o.Namespace }},
+		{"NAME", func(o hub.Organization) string { return o.FullName }},
+		{"MY ROLE", func(o hub.Organization) string { return o.Role }},
+		{"TEAMS", func(o hub.Organization) string { return fmt.Sprintf("%v", len(o.Teams)) }},
+		{"MEMBERS", func(o hub.Organization) string { return fmt.Sprintf("%v", len(o.Members)) }},
 	}
 )
 
 type column struct {
 	header string
-	value  func(t hub.Repository) string
+	value  func(o hub.Organization) string
 }
 
 func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls [ORGANIZATION]",
-		Short: "List all the repositories from your account or an organization",
-		Args:  cli.RequiresMaxArgs(1),
+		Use:   "ls",
+		Short: "List all the organizations",
+		Args:  cli.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, args)
+			return runList(ctx, dockerCli)
 		},
 	}
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
-	var account string
+func runList(ctx context.Context, dockerCli command.Cli) error {
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		authConfig := command.ResolveAuthConfig(ctx, dockerCli, hub)
-		account = authConfig.Username
-		return authConfig
+		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
 	client, err := hub.NewClient(authResolver)
 	if err != nil {
 		return err
 	}
-	if len(args) > 0 {
-		account = args[0]
-	}
-	repositories, err := client.GetRepositories(account)
+	organizations, err := client.GetOrganizations()
 	if err != nil {
 		return err
 	}
@@ -93,10 +79,10 @@ func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
 	}
 	fmt.Fprintln(w, strings.Join(headers, "\t"))
 
-	for _, repository := range repositories {
+	for _, organization := range organizations {
 		var values []string
 		for _, column := range defaultColumns {
-			values = append(values, column.value(repository))
+			values = append(values, column.value(organization))
 		}
 		fmt.Fprintln(w, strings.Join(values, "\t"))
 	}
