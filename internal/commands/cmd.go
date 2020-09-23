@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-cli-plugin/internal/commands/repo"
 	"github.com/docker/hub-cli-plugin/internal/commands/tag"
 )
 
@@ -48,7 +49,9 @@ func NewHubCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
 
-	cmd.AddCommand(tag.NewTagCmd(ctx, dockerCli))
+	cmd.AddCommand(
+		repo.NewRepoCmd(ctx, dockerCli),
+		tag.NewTagCmd(ctx, dockerCli))
 	return cmd
 }
 

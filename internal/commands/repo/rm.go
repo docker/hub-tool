@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package tag
+package repo
 
 import (
 	"bufio"
@@ -33,40 +33,40 @@ import (
 	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
-type rmiOptions struct {
+type rmOptions struct {
 	force bool
 }
 
 func newRmCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
-	var opts rmiOptions
+	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:   "rm REPOSITORY:TAG",
-		Short: "Delete a tag in a repository",
+		Use:   "rm [OPTIONS] REPOSITORY",
+		Short: "Delete a repository",
 		Args:  cli.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runRm(ctx, dockerCli, opts, args[0])
 		},
 	}
-	cmd.Flags().BoolVar(&opts.force, "platforms", false, "List all available platforms per tag")
+	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the repository")
 	return cmd
 }
 
-func runRm(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image string) error {
-	ref, err := reference.Parse(image)
+func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, repository string) error {
+	ref, err := reference.Parse(repository)
 	if err != nil {
 		return err
 	}
-	namedTaggedRef, ok := ref.(reference.NamedTagged)
+	namedRef, ok := ref.(reference.Named)
 	if !ok {
-		return fmt.Errorf("invalid reference: tag must be specified")
+		return fmt.Errorf("invalid reference: repository not specified")
 	}
 
 	if !opts.force {
-		fmt.Println("Please type the name of your repository to confirm deletion:", namedTaggedRef.Name())
+		fmt.Println("Please type the name of your repository to confirm deletion:", namedRef.Name())
 		reader := bufio.NewReader(os.Stdin)
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
-		if input != namedTaggedRef.Name() {
+		if input != namedRef.Name() {
 			return fmt.Errorf("%q differs from your repository name, deletion aborted", input)
 		}
 	}
@@ -78,9 +78,9 @@ func runRm(ctx context.Context, dockerCli command.Cli, opts rmiOptions, image st
 	if err != nil {
 		return err
 	}
-	if err := client.RemoveTag(namedTaggedRef.Name(), namedTaggedRef.Tag()); err != nil {
+	if err := client.RemoveRepository(namedRef.Name()); err != nil {
 		return err
 	}
-	fmt.Println("Deleted", image)
+	fmt.Println("Deleted", repository)
 	return nil
 }
