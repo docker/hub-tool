@@ -57,25 +57,31 @@ type column struct {
 
 func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls",
-		Short: "List all the repositories",
-		Args:  cli.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli)
+		Use:   "ls [ORGANIZATION]",
+		Short: "List all the repositories from your account or an organization",
+		Args:  cli.RequiresMaxArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runList(ctx, dockerCli, args)
 		},
 	}
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli) error {
+func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
+	var account string
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
+		authConfig := command.ResolveAuthConfig(ctx, dockerCli, hub)
+		account = authConfig.Username
+		return authConfig
 	}
 	client, err := hub.NewClient(authResolver)
 	if err != nil {
 		return err
 	}
-	repositories, err := client.GetRepositories()
+	if len(args) > 0 {
+		account = args[0]
+	}
+	repositories, err := client.GetRepositories(account)
 	if err != nil {
 		return err
 	}
