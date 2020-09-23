@@ -31,18 +31,23 @@ import (
 const (
 	// LoginURL path to the Hub login URL
 	LoginURL = "/v2/users/login"
-	// TagsURL path to the Hub provider token generation URL
-	TagsURL = "/v2/repositories/%s/tags/?page_size=25&page=1"
+	// TagsURL path to the Hub API listing the tags
+	TagsURL = "/v2/repositories/%s/tags/"
 	// DeleteTagURL path to the Hub API to remove a tag
 	DeleteTagURL = "/v2/repositories/%s/tags/%s/"
+	// RepositoriesURL path to the Hub API listing the repositories
+	RepositoriesURL = "/v2/repositories/%s/"
+	// DeleteRepositoryURL path to the Hub API to remove a repository
+	DeleteRepositoryURL = "/v2/repositories/%s/"
 
-	tagsPerPage = 25
+	itemsPerPage = 25
 )
 
 //Client sends authenticated calls to the Hub API
 type Client struct {
 	domain string
 	token  string
+	user   string
 }
 
 //AuthResolver resolves authentication configuration depending the registry
@@ -60,7 +65,37 @@ func NewClient(authResolver AuthResolver) (*Client, error) {
 	return &Client{
 		domain: hubInstance.APIHubBaseURL,
 		token:  token,
+		user:   hubAuthConfig.Username,
 	}, nil
+}
+
+//GetRepositories lists all the repositories a user can access
+func (h *Client) GetRepositories() ([]Repository, error) {
+	u, err := url.Parse(h.domain + fmt.Sprintf(RepositoriesURL, h.user))
+	if err != nil {
+		return nil, err
+	}
+	q := url.Values{}
+	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
+	q.Add("page", "1")
+	q.Add("ordering", "last_updated")
+	u.RawQuery = q.Encode()
+
+	repos, next, err := h.getRepositoriesPage(u.String())
+	if err != nil {
+		return nil, err
+	}
+
+	for next != "" {
+		pageRepos, n, err := h.getRepositoriesPage(next)
+		if err != nil {
+			return nil, err
+		}
+		next = n
+		repos = append(repos, pageRepos...)
+	}
+
+	return repos, nil
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
@@ -74,7 +109,7 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 		return nil, err
 	}
 	q := url.Values{}
-	q.Add("page_size", fmt.Sprintf("%v", tagsPerPage))
+	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
@@ -98,7 +133,17 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 //RemoveTag removes a tag in a repository on Hub
 func (h *Client) RemoveTag(repository, tag string) error {
 	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteTagURL, repository, tag), nil)
-	fmt.Println(req.URL)
+	if err != nil {
+		return err
+	}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	_, err = doRequest(req)
+	return err
+}
+
+//RemoveRepository removes a repository on Hub
+func (h *Client) RemoveRepository(repository string) error {
+	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteRepositoryURL, repository), nil)
 	if err != nil {
 		return err
 	}
@@ -133,6 +178,35 @@ func (h *Client) getTagsPage(url string) ([]Tag, string, error) {
 		tags = append(tags, tag)
 	}
 	return tags, hubResponse.Next, nil
+}
+
+func (h *Client) getRepositoriesPage(url string) ([]Repository, string, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	response, err := doRequest(req)
+	if err != nil {
+		return nil, "", err
+	}
+	var hubResponse hubRepositoryResponse
+	if err := json.Unmarshal(response, &hubResponse); err != nil {
+		return nil, "", err
+	}
+	var repos []Repository
+	for _, result := range hubResponse.Results {
+		repo := Repository{
+			Name:        result.Name,
+			Description: result.Description,
+			LastUpdated: result.LastUpdated,
+			PullCount:   result.PullCount,
+			StarCount:   result.StarCount,
+			IsPrivate:   result.IsPrivate,
+		}
+		repos = append(repos, repo)
+	}
+	return repos, hubResponse.Next, nil
 }
 
 func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
@@ -171,7 +245,7 @@ func doRequest(req *http.Request) ([]byte, error) {
 	if resp.Body != nil {
 		defer resp.Body.Close() //nolint:errcheck
 	}
-	if resp.StatusCode < 200 && resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
