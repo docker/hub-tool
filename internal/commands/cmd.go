@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-cli-plugin/internal/commands/tag"
 )
 
 type options struct {
@@ -34,9 +35,9 @@ type options struct {
 func NewHubCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	var flags options
 	cmd := &cobra.Command{
+		Use:         "hub",
 		Short:       "Docker Hub",
 		Long:        `A tool to manage your Docker Hub images`,
-		Use:         "hub",
 		Annotations: map[string]string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
@@ -47,10 +48,7 @@ func NewHubCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
 
-	cmd.AddCommand(
-		newListCmd(ctx, dockerCli),
-		newRmiCmd(ctx, dockerCli),
-	)
+	cmd.AddCommand(tag.NewTagCmd(ctx, dockerCli))
 	return cmd
 }
 
