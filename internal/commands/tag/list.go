@@ -61,6 +61,18 @@ var (
 			}
 			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
 		}},
+		{"LAST PUSHED", func(t hub.Tag) string {
+			if len(t.Images) > 0 && t.Images[0].LastPushed.Nanosecond() != 0 {
+				return units.HumanDuration(time.Since(t.Images[0].LastPushed))
+			}
+			return ""
+		}},
+		{"LAST PULLED", func(t hub.Tag) string {
+			if len(t.Images) > 0 && t.Images[0].LastPulled.Nanosecond() != 0 {
+				return units.HumanDuration(time.Since(t.Images[0].LastPulled))
+			}
+			return ""
+		}},
 		{"SIZE", func(t hub.Tag) string {
 			size := t.FullSize
 			if len(t.Images) > 0 {
