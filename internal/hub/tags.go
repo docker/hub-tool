@@ -49,6 +49,10 @@ type Image struct {
 	Os           string
 	Variant      string
 	Size         int
+	Expires      time.Time
+	LastPulled   time.Time
+	LastPushed   time.Time
+	Status       string
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
@@ -152,6 +156,11 @@ type hubTagImage struct {
 	OsFeatures   string `json:"os_features,omitempty"`
 	OsVersion    string `json:"os_version,omitempty"`
 	Size         int    `json:"size"`
+	// New API
+	Expires    time.Time `json:"expires,omitempty"`
+	LastPulled time.Time `json:"last_pulled,omitempty"`
+	LastPushed time.Time `json:"last_pushed,omitempty"`
+	Status     string    `json:"status,omitempty"`
 }
 
 func getRepoPath(s string) (string, error) {
@@ -173,6 +182,10 @@ func toImages(result []hubTagImage) []Image {
 			Os:           result[i].Os,
 			Variant:      result[i].Variant,
 			Size:         result[i].Size,
+			Status:       result[i].Status,
+			Expires:      result[i].Expires,
+			LastPulled:   result[i].LastPulled,
+			LastPushed:   result[i].LastPushed,
 		}
 	}
 	return images
