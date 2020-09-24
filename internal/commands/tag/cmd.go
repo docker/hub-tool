@@ -33,6 +33,7 @@ func NewTagCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 		RunE: command.ShowHelp(dockerCli.Err()),
 	}
 	cmd.AddCommand(
+		newInspectCmd(ctx, dockerCli),
 		newListCmd(ctx, dockerCli),
 		newRmCmd(ctx, dockerCli),
 	)
