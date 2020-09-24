@@ -43,6 +43,18 @@ var (
 			}
 			return ""
 		}},
+		{"STATUS", func(t hub.Tag) string {
+			if len(t.Images) > 0 {
+				return t.Images[0].Status // TODO: status should be on the tag/manifest list level too, not only on the image level
+			}
+			return ""
+		}},
+		{"EXPIRES", func(t hub.Tag) string {
+			if len(t.Images) > 0 && t.Images[0].Expires.Nanosecond() != 0 {
+				return units.HumanDuration(time.Until(t.Images[0].Expires))
+			}
+			return ""
+		}},
 		{"LAST UPDATE", func(t hub.Tag) string {
 			if t.LastUpdated.Nanosecond() == 0 {
 				return ""
