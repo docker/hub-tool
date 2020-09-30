@@ -53,13 +53,13 @@ func (h *Client) GetRepositories(account string) ([]Repository, error) {
 	q.Add("ordering", "last_updated")
 	u.RawQuery = q.Encode()
 
-	repos, next, err := h.getRepositoriesPage(u.String())
+	repos, next, err := h.getRepositoriesPage(u.String(), account)
 	if err != nil {
 		return nil, err
 	}
 
 	for next != "" {
-		pageRepos, n, err := h.getRepositoriesPage(next)
+		pageRepos, n, err := h.getRepositoriesPage(next, account)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func (h *Client) RemoveRepository(repository string) error {
 	return err
 }
 
-func (h *Client) getRepositoriesPage(url string) ([]Repository, string, error) {
+func (h *Client) getRepositoriesPage(url, account string) ([]Repository, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
@@ -98,7 +98,7 @@ func (h *Client) getRepositoriesPage(url string) ([]Repository, string, error) {
 	var repos []Repository
 	for _, result := range hubResponse.Results {
 		repo := Repository{
-			Name:        result.Name,
+			Name:        fmt.Sprintf("%s/%s", account, result.Name),
 			Description: result.Description,
 			LastUpdated: result.LastUpdated,
 			PullCount:   result.PullCount,
