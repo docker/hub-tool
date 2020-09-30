@@ -32,6 +32,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-cli-plugin/internal/metrics"
+)
+
+const (
+	listName = "ls"
 )
 
 var (
@@ -55,11 +60,14 @@ type column struct {
 	value  func(t hub.Repository) string
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls [ORGANIZATION]",
+		Use:   listName + " [ORGANIZATION]",
 		Short: "List all the repositories from your account or an organization",
 		Args:  cli.RequiresMaxArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send(parent, listName)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runList(ctx, dockerCli, args)
 		},

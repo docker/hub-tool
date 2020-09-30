@@ -24,18 +24,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	orgName = "org"
+)
+
 //NewOrgCmd configures the org manage command
 func NewOrgCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "org",
+		Use:  orgName,
 		Long: "Manage organizations",
 		Args: cli.NoArgs,
 		RunE: command.ShowHelp(dockerCli.Err()),
 	}
 	cmd.AddCommand(
-		newListCmd(ctx, dockerCli),
-		newMembersCmd(ctx, dockerCli),
-		newTeamsCmd(ctx, dockerCli),
+		newListCmd(ctx, dockerCli, orgName),
+		newMembersCmd(ctx, dockerCli, orgName),
+		newTeamsCmd(ctx, dockerCli, orgName),
 	)
 	return cmd
 }
