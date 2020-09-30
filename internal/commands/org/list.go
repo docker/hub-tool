@@ -30,6 +30,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-cli-plugin/internal/metrics"
+)
+
+const (
+	listName = "ls"
 )
 
 var (
@@ -47,11 +52,14 @@ type column struct {
 	value  func(o hub.Organization) string
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls",
+		Use:   listName,
 		Short: "List all the organizations",
 		Args:  cli.NoArgs,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send(parent, listName)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runList(ctx, dockerCli)
 		},

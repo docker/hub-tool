@@ -14,31 +14,21 @@
    limitations under the License.
 */
 
-package repo
+package metrics
 
 import (
-	"context"
+	"strings"
 
-	"github.com/docker/cli/cli"
-	"github.com/docker/cli/cli/command"
-	"github.com/spf13/cobra"
+	"github.com/docker/compose-cli/metrics"
 )
 
-const (
-	repoName = "repo"
-)
-
-//NewRepoCmd configures the repo manage command
-func NewRepoCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:  repoName,
-		Long: "Manage repositories",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(dockerCli.Err()),
-	}
-	cmd.AddCommand(
-		newListCmd(ctx, dockerCli, repoName),
-		newRmCmd(ctx, dockerCli, repoName),
-	)
-	return cmd
+//Send emit a metric message to the local Desktop metric listener
+func Send(parent, command string) {
+	client := metrics.NewClient()
+	client.Send(metrics.Command{
+		Command: strings.Join([]string{parent, command}, " "),
+		Context: "hub",
+		Source:  "hub-cli",
+		Status:  metrics.SuccessStatus,
+	})
 }

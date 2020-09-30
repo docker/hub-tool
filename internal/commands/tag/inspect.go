@@ -31,18 +31,27 @@ import (
 	"github.com/docker/distribution/reference"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-cli-plugin/internal/metrics"
+)
+
+const (
+	inspectName = "inspect"
 )
 
 type inspectOptions struct {
 	raw bool
 }
 
-func newInspectCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
 	var opts inspectOptions
 	cmd := &cobra.Command{
-		Use:   "inspect [OPTIONS] REPOSITORY:TAG",
+		Use:   inspectName + " [OPTIONS] REPOSITORY:TAG",
 		Short: "Show the details of an image in the registry",
 		Args:  cli.ExactArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send(parent, inspectName)
+		},
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runInspect(ctx, dockerCli, opts, args[0])
 		},

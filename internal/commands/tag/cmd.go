@@ -24,18 +24,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	tagName = "tag"
+)
+
 //NewTagCmd configures the tag manage command
 func NewTagCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "tag",
+		Use:  tagName,
 		Long: "Manage tags",
 		Args: cli.NoArgs,
 		RunE: command.ShowHelp(dockerCli.Err()),
 	}
 	cmd.AddCommand(
-		newInspectCmd(ctx, dockerCli),
-		newListCmd(ctx, dockerCli),
-		newRmCmd(ctx, dockerCli),
+		newInspectCmd(ctx, dockerCli, tagName),
+		newListCmd(ctx, dockerCli, tagName),
+		newRmCmd(ctx, dockerCli, tagName),
 	)
 	return cmd
 }
