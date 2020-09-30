@@ -19,6 +19,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -29,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-cli-plugin/internal/format"
 	"github.com/docker/hub-cli-plugin/internal/hub"
 	"github.com/docker/hub-cli-plugin/internal/metrics"
 )
@@ -52,7 +54,12 @@ type column struct {
 	value  func(o hub.Organization) string
 }
 
+type listOptions struct {
+	format.Option
+}
+
 func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+	var opts listOptions
 	cmd := &cobra.Command{
 		Use:   listName,
 		Short: "List all the organizations",
@@ -61,13 +68,14 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, listName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli)
+			return runList(ctx, dockerCli, opts)
 		},
 	}
+	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli) error {
+func runList(ctx context.Context, dockerCli command.Cli, opts listOptions) error {
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
@@ -79,8 +87,12 @@ func runList(ctx context.Context, dockerCli command.Cli) error {
 	if err != nil {
 		return err
 	}
+	return opts.Print(os.Stdout, organizations, printOrganizations)
+}
 
-	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
+func printOrganizations(out io.Writer, values interface{}) error {
+	organizations := values.([]hub.Organization)
+	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
