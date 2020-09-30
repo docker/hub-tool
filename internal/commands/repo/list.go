@@ -19,6 +19,7 @@ package repo
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -31,6 +32,7 @@ import (
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-cli-plugin/internal/format"
 	"github.com/docker/hub-cli-plugin/internal/hub"
 	"github.com/docker/hub-cli-plugin/internal/metrics"
 )
@@ -60,7 +62,12 @@ type column struct {
 	value  func(t hub.Repository) string
 }
 
+type listOptions struct {
+	format.Option
+}
+
 func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+	var opts listOptions
 	cmd := &cobra.Command{
 		Use:   listName + " [ORGANIZATION]",
 		Short: "List all the repositories from your account or an organization",
@@ -69,13 +76,14 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, listName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, args)
+			return runList(ctx, dockerCli, opts, args)
 		},
 	}
+	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
+func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, args []string) error {
 	var account string
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		authConfig := command.ResolveAuthConfig(ctx, dockerCli, hub)
@@ -94,7 +102,12 @@ func runList(ctx context.Context, dockerCli command.Cli, args []string) error {
 		return err
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
+	return opts.Print(os.Stdout, repositories, printRepositories)
+}
+
+func printRepositories(out io.Writer, values interface{}) error {
+	repositories := values.([]hub.Repository)
+	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)

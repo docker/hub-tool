@@ -19,6 +19,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -29,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-cli-plugin/internal/format"
 	"github.com/docker/hub-cli-plugin/internal/hub"
 	"github.com/docker/hub-cli-plugin/internal/metrics"
 )
@@ -50,7 +52,12 @@ type teamColumn struct {
 	value  func(t hub.Team) string
 }
 
+type teamsOptions struct {
+	format.Option
+}
+
 func newTeamsCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+	var opts teamsOptions
 	cmd := &cobra.Command{
 		Use:   teamsName + " ORGANIZATION",
 		Short: "List all the teams in an organization",
@@ -59,13 +66,14 @@ func newTeamsCmd(ctx context.Context, dockerCli command.Cli, parent string) *cob
 			metrics.Send(parent, teamsName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runTeams(ctx, dockerCli, args[0])
+			return runTeams(ctx, dockerCli, opts, args[0])
 		},
 	}
+	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
 
-func runTeams(ctx context.Context, dockerCli command.Cli, organization string) error {
+func runTeams(ctx context.Context, dockerCli command.Cli, opts teamsOptions, organization string) error {
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
@@ -77,8 +85,12 @@ func runTeams(ctx context.Context, dockerCli command.Cli, organization string) e
 	if err != nil {
 		return err
 	}
+	return opts.Print(os.Stdout, teams, printTeams)
+}
 
-	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
+func printTeams(out io.Writer, values interface{}) error {
+	teams := values.([]hub.Team)
+	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range teamsColumns {
 		headers = append(headers, column.header)
