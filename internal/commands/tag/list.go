@@ -19,6 +19,7 @@ package tag
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -31,6 +32,7 @@ import (
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-cli-plugin/internal/format"
 	"github.com/docker/hub-cli-plugin/internal/hub"
 	"github.com/docker/hub-cli-plugin/internal/metrics"
 )
@@ -111,6 +113,7 @@ type column struct {
 }
 
 type listOptions struct {
+	format.Option
 	platforms bool
 }
 
@@ -128,6 +131,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 		},
 	}
 	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
+	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
 
@@ -148,13 +152,17 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repos
 		defaultColumns = append(defaultColumns, platformColumn)
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
+	return opts.Print(os.Stdout, tags, printTags)
+}
+
+func printTags(out io.Writer, values interface{}) error {
+	tags := values.([]hub.Tag)
+	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
 	fmt.Fprintln(w, strings.Join(headers, "\t"))
-
 	for _, tag := range tags {
 		var values []string
 		for _, column := range defaultColumns {
