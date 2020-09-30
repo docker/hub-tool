@@ -32,6 +32,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-cli-plugin/internal/metrics"
+)
+
+const (
+	lsName = "ls"
 )
 
 var (
@@ -109,12 +114,15 @@ type listOptions struct {
 	platforms bool
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
-		Use:   "ls [OPTION] REPOSITORY",
+		Use:   lsName + " [OPTION] REPOSITORY",
 		Short: "List all the images in a repository",
 		Args:  cli.ExactArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send(parent, lsName)
+		},
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runList(ctx, dockerCli, opts, args[0])
 		},

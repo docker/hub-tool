@@ -31,18 +31,26 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-cli-plugin/internal/metrics"
+)
+
+const (
+	rmName = "rm"
 )
 
 type rmOptions struct {
 	force bool
 }
 
-func newRmCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func newRmCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
 	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:   "rm [OPTIONS] REPOSITORY",
+		Use:   rmName + " [OPTIONS] REPOSITORY",
 		Short: "Delete a repository",
 		Args:  cli.ExactArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send(parent, rmName)
+		},
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runRm(ctx, dockerCli, opts, args[0])
 		},
