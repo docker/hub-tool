@@ -56,6 +56,7 @@ func newRmCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.
 		},
 	}
 	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the tag")
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

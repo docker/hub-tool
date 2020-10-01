@@ -70,6 +70,7 @@ func newTeamsCmd(ctx context.Context, dockerCli command.Cli, parent string) *cob
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
