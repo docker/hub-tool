@@ -40,6 +40,10 @@ type Tag struct {
 	LastUpdated         time.Time
 	LastUpdaterUserName string
 	Images              []Image
+	Expires             time.Time
+	LastPulled          time.Time
+	LastPushed          time.Time
+	Status              string
 }
 
 //Image represents the metadata of a manifest
@@ -121,6 +125,10 @@ func (c *Client) getTagsPage(url, repository string) ([]Tag, string, error) {
 			LastUpdated:         result.LastUpdated,
 			LastUpdaterUserName: result.LastUpdaterUserName,
 			Images:              toImages(result.Images),
+			Status:              result.Status,
+			LastPulled:          result.LastPulled,
+			LastPushed:          result.LastPushed,
+			Expires:             result.Expires,
 		}
 		tags = append(tags, tag)
 	}
@@ -146,6 +154,11 @@ type hubTagResult struct {
 	Repository          int           `json:"repository"`
 	FullSize            int           `json:"full_size"`
 	V2                  bool          `json:"v2"`
+	// New API
+	Expires    time.Time `json:"tag_expires,omitempty"`
+	LastPulled time.Time `json:"tag_last_pulled,omitempty"`
+	LastPushed time.Time `json:"tag_last_pushed,omitempty"`
+	Status     string    `json:"tag_status,omitempty"`
 }
 
 type hubTagImage struct {
