@@ -40,7 +40,7 @@ const (
 )
 
 type inspectOptions struct {
-	raw bool
+	format string
 }
 
 func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
@@ -56,7 +56,7 @@ func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 			return runInspect(ctx, dockerCli, opts, args[0])
 		},
 	}
-	cmd.Flags().BoolVar(&opts.raw, "raw", false, "Show original JSON manifest")
+	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json")`)
 	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
@@ -71,9 +71,11 @@ func runInspect(ctx context.Context, dockerCli command.Cli, opts inspectOptions,
 		return err
 	}
 
-	if opts.raw {
+	if opts.format == "json" {
 		fmt.Printf("%s", raw) // avoid newline to keep digest
 		return nil
+	} else if opts.format != "" {
+		return fmt.Errorf("unsupported format type: %q", opts.format)
 	}
 
 	switch descriptor.MediaType {
