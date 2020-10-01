@@ -38,8 +38,8 @@ type Member struct {
 }
 
 //GetMembers lists all the members in an organization
-func (h *Client) GetMembers(organization string) ([]Member, error) {
-	u, err := url.Parse(h.domain + fmt.Sprintf(MembersURL, organization))
+func (c *Client) GetMembers(organization string) ([]Member, error) {
+	u, err := url.Parse(c.domain + fmt.Sprintf(MembersURL, organization))
 	if err != nil {
 		return nil, err
 	}
@@ -48,13 +48,13 @@ func (h *Client) GetMembers(organization string) ([]Member, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	members, next, err := h.getMembersPage(u.String())
+	members, next, err := c.getMembersPage(u.String())
 	if err != nil {
 		return nil, err
 	}
 
 	for next != "" {
-		pageMembers, n, err := h.getMembersPage(next)
+		pageMembers, n, err := c.getMembersPage(next)
 		if err != nil {
 			return nil, err
 		}
@@ -66,13 +66,13 @@ func (h *Client) GetMembers(organization string) ([]Member, error) {
 }
 
 // GetMembersPerTeam returns the members of a team in an organization
-func (h *Client) GetMembersPerTeam(organization, team string) ([]Member, error) {
-	u := h.domain + fmt.Sprintf(MembersPerTeamURL, organization, team)
+func (c *Client) GetMembersPerTeam(organization, team string) ([]Member, error) {
+	u := c.domain + fmt.Sprintf(MembersPerTeamURL, organization, team)
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	response, err := doRequest(req)
 	if err != nil {
 		return nil, err
@@ -84,12 +84,12 @@ func (h *Client) GetMembersPerTeam(organization, team string) ([]Member, error) 
 	return members, nil
 }
 
-func (h *Client) getMembersPage(url string) ([]Member, string, error) {
+func (c *Client) getMembersPage(url string) ([]Member, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	response, err := doRequest(req)
 	if err != nil {
 		return nil, "", err

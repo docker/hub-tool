@@ -64,6 +64,7 @@ type column struct {
 
 type listOptions struct {
 	format.Option
+	all bool
 }
 
 func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
@@ -79,6 +80,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			return runList(ctx, dockerCli, opts, args)
 		},
 	}
+	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
 	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
@@ -90,7 +92,11 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, args 
 		account = authConfig.Username
 		return authConfig
 	}
-	client, err := hub.NewClient(authResolver)
+	var clientOps []hub.ClientOp
+	if opts.all {
+		clientOps = append(clientOps, hub.WithAllElements())
+	}
+	client, err := hub.NewClient(authResolver, clientOps...)
 	if err != nil {
 		return err
 	}

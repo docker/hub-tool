@@ -42,8 +42,8 @@ type Repository struct {
 }
 
 //GetRepositories lists all the repositories a user can access
-func (h *Client) GetRepositories(account string) ([]Repository, error) {
-	u, err := url.Parse(h.domain + fmt.Sprintf(RepositoriesURL, account))
+func (c *Client) GetRepositories(account string) ([]Repository, error) {
+	u, err := url.Parse(c.domain + fmt.Sprintf(RepositoriesURL, account))
 	if err != nil {
 		return nil, err
 	}
@@ -53,40 +53,42 @@ func (h *Client) GetRepositories(account string) ([]Repository, error) {
 	q.Add("ordering", "last_updated")
 	u.RawQuery = q.Encode()
 
-	repos, next, err := h.getRepositoriesPage(u.String(), account)
+	repos, next, err := c.getRepositoriesPage(u.String(), account)
 	if err != nil {
 		return nil, err
 	}
 
-	for next != "" {
-		pageRepos, n, err := h.getRepositoriesPage(next, account)
-		if err != nil {
-			return nil, err
+	if c.fetchAllElements {
+		for next != "" {
+			pageRepos, n, err := c.getRepositoriesPage(next, account)
+			if err != nil {
+				return nil, err
+			}
+			next = n
+			repos = append(repos, pageRepos...)
 		}
-		next = n
-		repos = append(repos, pageRepos...)
 	}
 
 	return repos, nil
 }
 
 //RemoveRepository removes a repository on Hub
-func (h *Client) RemoveRepository(repository string) error {
-	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteRepositoryURL, repository), nil)
+func (c *Client) RemoveRepository(repository string) error {
+	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(DeleteRepositoryURL, repository), nil)
 	if err != nil {
 		return err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	_, err = doRequest(req)
 	return err
 }
 
-func (h *Client) getRepositoriesPage(url, account string) ([]Repository, string, error) {
+func (c *Client) getRepositoriesPage(url, account string) ([]Repository, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	response, err := doRequest(req)
 	if err != nil {
 		return nil, "", err
