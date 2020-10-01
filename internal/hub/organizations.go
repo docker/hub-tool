@@ -39,8 +39,8 @@ type Organization struct {
 }
 
 //GetOrganizations lists all the organizations a user has joined
-func (h *Client) GetOrganizations() ([]Organization, error) {
-	u, err := url.Parse(h.domain + OrganizationsURL)
+func (c *Client) GetOrganizations() ([]Organization, error) {
+	u, err := url.Parse(c.domain + OrganizationsURL)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +49,13 @@ func (h *Client) GetOrganizations() ([]Organization, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	organizations, next, err := h.getOrganizationsPage(u.String())
+	organizations, next, err := c.getOrganizationsPage(u.String())
 	if err != nil {
 		return nil, err
 	}
 
 	for next != "" {
-		pageOrganizations, n, err := h.getOrganizationsPage(next)
+		pageOrganizations, n, err := c.getOrganizationsPage(next)
 		if err != nil {
 			return nil, err
 		}
@@ -66,12 +66,12 @@ func (h *Client) GetOrganizations() ([]Organization, error) {
 	return organizations, nil
 }
 
-func (h *Client) getOrganizationsPage(url string) ([]Organization, string, error) {
+func (c *Client) getOrganizationsPage(url string) ([]Organization, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	response, err := doRequest(req)
 	if err != nil {
 		return nil, "", err
@@ -82,11 +82,11 @@ func (h *Client) getOrganizationsPage(url string) ([]Organization, string, error
 	}
 	var organizations []Organization
 	for _, result := range hubResponse.Results {
-		teams, err := h.GetTeams(result.OrgName)
+		teams, err := c.GetTeams(result.OrgName)
 		if err != nil {
 			return nil, "", err
 		}
-		members, err := h.GetMembers(result.OrgName)
+		members, err := c.GetMembers(result.OrgName)
 		if err != nil {
 			return nil, "", err
 		}
