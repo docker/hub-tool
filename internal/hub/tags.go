@@ -70,13 +70,13 @@ func (c *Client) GetTags(repository string) ([]Tag, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tags, next, err := c.getTagsPage(u.String())
+	tags, next, err := c.getTagsPage(u.String(), repository)
 	if err != nil {
 		return nil, err
 	}
 	if c.fetchAllElements {
 		for next != "" {
-			pageTags, n, err := c.getTagsPage(next)
+			pageTags, n, err := c.getTagsPage(next, repository)
 			if err != nil {
 				return nil, err
 			}
@@ -99,7 +99,7 @@ func (c *Client) RemoveTag(repository, tag string) error {
 	return err
 }
 
-func (c *Client) getTagsPage(url string) ([]Tag, string, error) {
+func (c *Client) getTagsPage(url, repository string) ([]Tag, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
@@ -116,7 +116,7 @@ func (c *Client) getTagsPage(url string) ([]Tag, string, error) {
 	var tags []Tag
 	for _, result := range hubResponse.Results {
 		tag := Tag{
-			Name:                result.Name,
+			Name:                fmt.Sprintf("%s:%s", repository, result.Name),
 			FullSize:            result.FullSize,
 			LastUpdated:         result.LastUpdated,
 			LastUpdaterUserName: result.LastUpdaterUserName,
