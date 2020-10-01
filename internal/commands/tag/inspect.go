@@ -57,6 +57,7 @@ func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 		},
 	}
 	cmd.Flags().BoolVar(&opts.raw, "raw", false, "Show original JSON manifest")
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

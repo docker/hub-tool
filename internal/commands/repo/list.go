@@ -82,6 +82,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	}
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
 	opts.AddFormatFlag(cmd.Flags())
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
