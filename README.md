@@ -1,9 +1,9 @@
-# cli-plugin-hub
-Docker CLI plugin to play with Docker Hub.
+# Hub tool
+Docker cli tool to play with Docker Hub.
 
 ## Install
-Just run `make install`, all the build is containerized and it will copy the `docker-hub` binary to your
-`~/.docker/cli-plugins` directory.
+Just run `make install`, all the build is containerized. It will copy the hub tool binary to your
+`/usr/local/bin` directory.
 ```shell script
 $ make install
 ```
@@ -11,7 +11,7 @@ $ make install
 ## Use it
 
 ```shell script
-$ docker hub ls nginx
+$ hub-tool ls nginx
 TAG                    DIGEST                                                                    LAST UPDATE         SIZE
 latest                 sha256:aff269ec296daeab62055236b6815322d6ae0752f6877e18b39261903463e0fc   3 days ago          58.95MB
 stable-perl            sha256:8af9938e3a7afbabb6845864f305b84cdabd0f55c71ab6664d2b5385d77cb0fd   3 days ago          61.9MB
