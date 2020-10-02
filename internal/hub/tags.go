@@ -40,6 +40,10 @@ type Tag struct {
 	LastUpdated         time.Time
 	LastUpdaterUserName string
 	Images              []Image
+	Expires             time.Time
+	LastPulled          time.Time
+	LastPushed          time.Time
+	Status              string
 }
 
 //Image represents the metadata of a manifest
@@ -56,12 +60,12 @@ type Image struct {
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
-func (h *Client) GetTags(repository string) ([]Tag, error) {
+func (c *Client) GetTags(repository string) ([]Tag, error) {
 	repoPath, err := getRepoPath(repository)
 	if err != nil {
 		return nil, err
 	}
-	u, err := url.Parse(h.domain + fmt.Sprintf(TagsURL, repoPath))
+	u, err := url.Parse(c.domain + fmt.Sprintf(TagsURL, repoPath))
 	if err != nil {
 		return nil, err
 	}
@@ -70,40 +74,41 @@ func (h *Client) GetTags(repository string) ([]Tag, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tags, next, err := h.getTagsPage(u.String())
+	tags, next, err := c.getTagsPage(u.String(), repository)
 	if err != nil {
 		return nil, err
 	}
-
-	for next != "" {
-		pageTags, n, err := h.getTagsPage(next)
-		if err != nil {
-			return nil, err
+	if c.fetchAllElements {
+		for next != "" {
+			pageTags, n, err := c.getTagsPage(next, repository)
+			if err != nil {
+				return nil, err
+			}
+			next = n
+			tags = append(tags, pageTags...)
 		}
-		next = n
-		tags = append(tags, pageTags...)
 	}
 
 	return tags, nil
 }
 
 //RemoveTag removes a tag in a repository on Hub
-func (h *Client) RemoveTag(repository, tag string) error {
-	req, err := http.NewRequest("DELETE", h.domain+fmt.Sprintf(DeleteTagURL, repository, tag), nil)
+func (c *Client) RemoveTag(repository, tag string) error {
+	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(DeleteTagURL, repository, tag), nil)
 	if err != nil {
 		return err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	_, err = doRequest(req)
 	return err
 }
 
-func (h *Client) getTagsPage(url string) ([]Tag, string, error) {
+func (c *Client) getTagsPage(url, repository string) ([]Tag, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", h.token)}
+	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
 	response, err := doRequest(req)
 	if err != nil {
 		return nil, "", err
@@ -115,11 +120,15 @@ func (h *Client) getTagsPage(url string) ([]Tag, string, error) {
 	var tags []Tag
 	for _, result := range hubResponse.Results {
 		tag := Tag{
-			Name:                result.Name,
+			Name:                fmt.Sprintf("%s:%s", repository, result.Name),
 			FullSize:            result.FullSize,
 			LastUpdated:         result.LastUpdated,
 			LastUpdaterUserName: result.LastUpdaterUserName,
 			Images:              toImages(result.Images),
+			Status:              result.Status,
+			LastPulled:          result.LastPulled,
+			LastPushed:          result.LastPushed,
+			Expires:             result.Expires,
 		}
 		tags = append(tags, tag)
 	}
@@ -145,6 +154,11 @@ type hubTagResult struct {
 	Repository          int           `json:"repository"`
 	FullSize            int           `json:"full_size"`
 	V2                  bool          `json:"v2"`
+	// New API
+	Expires    time.Time `json:"tag_expires,omitempty"`
+	LastPulled time.Time `json:"tag_last_pulled,omitempty"`
+	LastPushed time.Time `json:"tag_last_pushed,omitempty"`
+	Status     string    `json:"tag_status,omitempty"`
 }
 
 type hubTagImage struct {

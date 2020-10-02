@@ -72,6 +72,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
