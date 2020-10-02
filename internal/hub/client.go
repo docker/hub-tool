@@ -31,31 +31,49 @@ const (
 	// LoginURL path to the Hub login URL
 	LoginURL = "/v2/users/login"
 
-	itemsPerPage = 100
+	itemsPerPage = 25
 )
 
 //Client sends authenticated calls to the Hub API
 type Client struct {
-	domain string
-	token  string
+	domain           string
+	token            string
+	fetchAllElements bool
 }
 
 //AuthResolver resolves authentication configuration depending the registry
 type AuthResolver func(*registry.IndexInfo) types.AuthConfig
 
+//ClientOp represents an option given to NewClient constructor to customize client behavior.
+type ClientOp func(*Client) error
+
 //NewClient logs the user to the hub and returns a client which can send authenticated requests
 // to the Hub API
-func NewClient(authResolver AuthResolver) (*Client, error) {
+func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
 	token, err := login(hubInstance.APIHubBaseURL, hubAuthConfig)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
+	client := &Client{
 		domain: hubInstance.APIHubBaseURL,
 		token:  token,
-	}, nil
+	}
+	for _, op := range ops {
+		if err := op(client); err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
+}
+
+//WithAllElements makes the client fetch all the elements it can find, enabling pagination.
+func WithAllElements() ClientOp {
+	return func(c *Client) error {
+		c.fetchAllElements = true
+		return nil
+	}
 }
 
 func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {

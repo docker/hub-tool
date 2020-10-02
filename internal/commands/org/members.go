@@ -69,6 +69,7 @@ func newMembersCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

@@ -51,16 +51,13 @@ var (
 			return ""
 		}},
 		{"STATUS", func(t hub.Tag) string {
-			if len(t.Images) > 0 {
-				return t.Images[0].Status // TODO: status should be on the tag/manifest list level too, not only on the image level
-			}
-			return ""
+			return t.Status
 		}},
 		{"EXPIRES", func(t hub.Tag) string {
-			if len(t.Images) > 0 && t.Images[0].Expires.Nanosecond() != 0 {
-				return units.HumanDuration(time.Until(t.Images[0].Expires))
+			if t.Expires.Nanosecond() == 0 {
+				return ""
 			}
-			return ""
+			return units.HumanDuration(time.Until(t.Expires))
 		}},
 		{"LAST UPDATE", func(t hub.Tag) string {
 			if t.LastUpdated.Nanosecond() == 0 {
@@ -69,16 +66,16 @@ var (
 			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
 		}},
 		{"LAST PUSHED", func(t hub.Tag) string {
-			if len(t.Images) > 0 && t.Images[0].LastPushed.Nanosecond() != 0 {
-				return units.HumanDuration(time.Since(t.Images[0].LastPushed))
+			if t.LastPushed.Nanosecond() == 0 {
+				return ""
 			}
-			return ""
+			return units.HumanDuration(time.Since(t.LastPushed))
 		}},
 		{"LAST PULLED", func(t hub.Tag) string {
-			if len(t.Images) > 0 && t.Images[0].LastPulled.Nanosecond() != 0 {
-				return units.HumanDuration(time.Since(t.Images[0].LastPulled))
+			if t.LastPulled.Nanosecond() == 0 {
+				return ""
 			}
-			return ""
+			return units.HumanDuration(time.Since(t.LastPulled))
 		}},
 		{"SIZE", func(t hub.Tag) string {
 			size := t.FullSize
@@ -115,6 +112,7 @@ type column struct {
 type listOptions struct {
 	format.Option
 	platforms bool
+	all       bool
 }
 
 func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
@@ -131,7 +129,9 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 		},
 	}
 	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
+	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
 	opts.AddFormatFlag(cmd.Flags())
+	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
@@ -139,7 +139,11 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repos
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
-	client, err := hub.NewClient(authResolver)
+	var clientOps []hub.ClientOp
+	if opts.all {
+		clientOps = append(clientOps, hub.WithAllElements())
+	}
+	client, err := hub.NewClient(authResolver, clientOps...)
 	if err != nil {
 		return err
 	}
