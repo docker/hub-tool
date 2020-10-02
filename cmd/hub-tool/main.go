@@ -18,40 +18,36 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/docker/cli/cli-plugins/manager"
-	"github.com/docker/cli/cli-plugins/plugin"
 	"github.com/docker/cli/cli/command"
-	"github.com/spf13/cobra"
+	cliflags "github.com/docker/cli/cli/flags"
 
-	"github.com/docker/hub-cli-plugin/internal"
 	"github.com/docker/hub-cli-plugin/internal/commands"
 )
 
 func main() {
 	ctx, closeFunc := newSigContext()
 	defer closeFunc()
-	plugin.Run(func(dockerCli command.Cli) *cobra.Command {
-		cmd := commands.NewHubCmd(ctx, dockerCli)
-		originalPreRun := cmd.PersistentPreRunE
-		cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-			if err := plugin.PersistentPreRunE(cmd, args); err != nil {
-				return err
-			}
-			if originalPreRun != nil {
-				return originalPreRun(cmd, args)
-			}
-			return nil
-		}
-		return cmd
-	}, manager.Metadata{
-		SchemaVersion: "0.1.0",
-		Vendor:        "Docker Inc.",
-		Version:       internal.Version,
-	})
+
+	dockerCli, err := command.NewDockerCli()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	opts := cliflags.NewClientOptions()
+	if err := dockerCli.Initialize(opts); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	rootCmd := commands.NewRootCmd(ctx, dockerCli, os.Args[0])
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
 func newSigContext() (context.Context, func()) {

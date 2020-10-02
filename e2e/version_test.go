@@ -27,11 +27,9 @@ import (
 )
 
 func TestVersion(t *testing.T) {
-	cmd, _, cleanup := dockerCli.createTestCmd()
+	cmd, cleanup := hubToolCmd(t, "--version")
 	defer cleanup()
 
-	// docker scan --version should use user's Snyk binary
-	cmd.Command = dockerCli.Command("hub", "--version")
 	output := icmd.RunCmd(cmd).Assert(t, icmd.Success).Combined()
 	expected := fmt.Sprintf(
 		`Version:    %s
