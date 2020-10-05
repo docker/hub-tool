@@ -98,18 +98,16 @@ func (c *Client) RemoveTag(repository, tag string) error {
 	if err != nil {
 		return err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	_, err = doRequest(req)
+	_, err = doRequest(req, WithHubToken(c.token))
 	return err
 }
 
-func (c *Client) getTagsPage(url, repository string) ([]Tag, string, error) {
+func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	response, err := doRequest(req)
+	response, err := doRequest(req, append(reqOps, WithHubToken(c.token))...)
 	if err != nil {
 		return nil, "", err
 	}

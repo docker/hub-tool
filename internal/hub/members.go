@@ -72,8 +72,7 @@ func (c *Client) GetMembersPerTeam(organization, team string) ([]Member, error) 
 	if err != nil {
 		return nil, err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	response, err := doRequest(req)
+	response, err := doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +88,7 @@ func (c *Client) getMembersPage(url string) ([]Member, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	response, err := doRequest(req)
+	response, err := doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, "", err
 	}
