@@ -71,7 +71,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # HUB
 ####
 FROM scratch AS hub
-COPY --from=build /go/src/github.com/docker/hub-cli-plugin/bin/docker-hub_* /
+COPY --from=build /go/src/github.com/docker/hub-cli-plugin/bin/hub-tool_* /
 
 ####
 # CROSS_BUILD
@@ -111,11 +111,6 @@ COPY --from=gotestsum /root/gotestsum /usr/local/bin/gotestsum
 CMD ["make", "-f", "builder.Makefile", "test-unit"]
 
 ####
-# CLI
-####
-FROM docker:${CLI_VERSION} AS cli
-
-####
 # DOWNLOAD
 ####
 FROM golang:${GO_VERSION} AS download
@@ -129,12 +124,13 @@ FROM builder AS e2e
 ARG TARGETOS
 ARG TARGETARCH
 ARG TAG_NAME
+ARG BINARY_NAME
+ARG BINARY
 ENV TAG_NAME=$TAG_NAME
+ENV BINARY_NAME=$BINARY_NAME
 ENV DOCKER_CONFIG="/root/.docker"
 
-# install docker CLI
-COPY --from=cli /usr/local/bin/docker /usr/local/bin/docker
-# install docker-hub plugin
-COPY --from=cross-build /go/src/github.com/docker/hub-cli-plugin/dist/docker-hub_${TARGETOS}_${TARGETARCH} ./bin/docker-hub_${TARGETOS}_${TARGETARCH}
-RUN chmod +x ./bin/docker-hub_${TARGETOS}_${TARGETARCH}
+# install hub tool
+COPY --from=cross-build /go/src/github.com/docker/hub-cli-plugin/dist/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-cli-plugin/bin/${BINARY}
+RUN chmod +x ./bin/${BINARY}
 CMD ["make", "-f", "builder.Makefile", "e2e"]
