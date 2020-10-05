@@ -71,8 +71,7 @@ func (c *Client) getOrganizationsPage(url string) ([]Organization, string, error
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	response, err := doRequest(req)
+	response, err := doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, "", err
 	}
