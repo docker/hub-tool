@@ -33,12 +33,12 @@ type options struct {
 	showVersion bool
 }
 
-//NewHubCmd returns the main command
-func NewHubCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+//NewRootCmd returns the main command
+func NewRootCmd(ctx context.Context, dockerCli command.Cli, name string) *cobra.Command {
 	var flags options
 	cmd := &cobra.Command{
-		Use:         "hub",
-		Short:       "Docker Hub",
+		Use:         name,
+		Short:       "Docker Hub Tool",
 		Long:        `A tool to manage your Docker Hub images`,
 		Annotations: map[string]string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
