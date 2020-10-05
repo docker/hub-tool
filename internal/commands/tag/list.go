@@ -131,7 +131,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	}
 	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
-	cmd.Flags().StringVar(&opts.sort, "sort", "", "Sort tags by (update|name)=(asc|desc) (ex: --sort name=desc)")
+	cmd.Flags().StringVar(&opts.sort, "sort", "", "Sort tags by (updated|name)[=(asc|desc)] (e.g.: --sort updated or --sort name=desc)")
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().SetInterspersed(false)
 	return cmd
@@ -187,19 +187,34 @@ func printTags(out io.Writer, values interface{}) error {
 	return w.Flush()
 }
 
+const (
+	sortAsc  = "asc"
+	sortDesc = "desc"
+)
+
 func mapOrdering(order string) (string, error) {
-	switch order {
-	case "":
+	if order == "" {
 		return "", nil
-	case "update=asc":
-		return "last_updated", nil
-	case "update=desc":
-		return "-last_updated", nil
-	case "name=asc":
-		return "-name", nil
-	case "name=desc":
-		return "name", nil
+	}
+	name := "-name"
+	update := "last_updated"
+	fields := strings.SplitN(order, "=", 2)
+	if len(fields) == 2 {
+		switch fields[1] {
+		case sortDesc:
+			name = "name"
+			update = "-last_updated"
+		case sortAsc:
+		default:
+			return "", fmt.Errorf(`invalid sorting direction %q: should be either "asc" or "desc"`, fields[1])
+		}
+	}
+	switch fields[0] {
+	case "updated":
+		return update, nil
+	case "name":
+		return name, nil
 	default:
-		return "", fmt.Errorf("invalid sorting order %q", order)
+		return "", fmt.Errorf(`unknown sorting column %q: should be either "name" or "updated"`, fields[0])
 	}
 }
