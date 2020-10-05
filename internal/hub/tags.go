@@ -60,7 +60,7 @@ type Image struct {
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
-func (c *Client) GetTags(repository string) ([]Tag, error) {
+func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, error) {
 	repoPath, err := getRepoPath(repository)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c *Client) GetTags(repository string) ([]Tag, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tags, next, err := c.getTagsPage(u.String(), repository)
+	tags, next, err := c.getTagsPage(u.String(), repository, reqOps...)
 	if err != nil {
 		return nil, err
 	}
