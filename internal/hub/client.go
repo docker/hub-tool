@@ -88,6 +88,19 @@ func WithHubToken(token string) RequestOp {
 	}
 }
 
+//WithSortingOrder adds a sorting order query parameter to the request
+func WithSortingOrder(order string) RequestOp {
+	return func(req *http.Request) error {
+		values, err := url.ParseQuery(req.URL.RawQuery)
+		if err != nil {
+			return err
+		}
+		values.Add("ordering", order)
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	data, err := json.Marshal(hubAuthConfig)
 	if err != nil {

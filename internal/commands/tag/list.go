@@ -113,6 +113,7 @@ type listOptions struct {
 	format.Option
 	platforms bool
 	all       bool
+	sort      string
 }
 
 func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
@@ -130,12 +131,17 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	}
 	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
+	cmd.Flags().StringVar(&opts.sort, "sort", "", "Sort tags by (update|name)=(asc|desc) (ex: --sort name=desc)")
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
 func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repository string) error {
+	ordering, err := mapOrdering(opts.sort)
+	if err != nil {
+		return err
+	}
 	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
 		return command.ResolveAuthConfig(ctx, dockerCli, hub)
 	}
@@ -147,7 +153,11 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repos
 	if err != nil {
 		return err
 	}
-	tags, err := client.GetTags(repository)
+	var reqOps []hub.RequestOp
+	if ordering != "" {
+		reqOps = append(reqOps, hub.WithSortingOrder(ordering))
+	}
+	tags, err := client.GetTags(repository, reqOps...)
 	if err != nil {
 		return err
 	}
@@ -175,4 +185,21 @@ func printTags(out io.Writer, values interface{}) error {
 		fmt.Fprintln(w, strings.Join(values, "\t"))
 	}
 	return w.Flush()
+}
+
+func mapOrdering(order string) (string, error) {
+	switch order {
+	case "":
+		return "", nil
+	case "update=asc":
+		return "last_updated", nil
+	case "update=desc":
+		return "-last_updated", nil
+	case "name=asc":
+		return "-name", nil
+	case "name=desc":
+		return "name", nil
+	default:
+		return "", fmt.Errorf("invalid sorting order %q", order)
+	}
 }
