@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
@@ -46,6 +47,9 @@ type AuthResolver func(*registry.IndexInfo) types.AuthConfig
 
 //ClientOp represents an option given to NewClient constructor to customize client behavior.
 type ClientOp func(*Client) error
+
+//RequestOp represents an option to customize the request sent to the Hub API
+type RequestOp func(r *http.Request) error
 
 //NewClient logs the user to the hub and returns a client which can send authenticated requests
 // to the Hub API
@@ -72,6 +76,27 @@ func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 func WithAllElements() ClientOp {
 	return func(c *Client) error {
 		c.fetchAllElements = true
+		return nil
+	}
+}
+
+//WithHubToken sets the bearer token to the request
+func WithHubToken(token string) RequestOp {
+	return func(req *http.Request) error {
+		req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", token)}
+		return nil
+	}
+}
+
+//WithSortingOrder adds a sorting order query parameter to the request
+func WithSortingOrder(order string) RequestOp {
+	return func(req *http.Request) error {
+		values, err := url.ParseQuery(req.URL.RawQuery)
+		if err != nil {
+			return err
+		}
+		values.Add("ordering", order)
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }
@@ -103,8 +128,13 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	return creds.Token, nil
 }
 
-func doRequest(req *http.Request) ([]byte, error) {
+func doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
 	req.Header["Accept"] = []string{"application/json"}
+	for _, op := range reqOps {
+		if err := op(req); err != nil {
+			return nil, err
+		}
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
