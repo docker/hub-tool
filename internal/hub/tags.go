@@ -60,7 +60,7 @@ type Image struct {
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
-func (c *Client) GetTags(repository string) ([]Tag, error) {
+func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, error) {
 	repoPath, err := getRepoPath(repository)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c *Client) GetTags(repository string) ([]Tag, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tags, next, err := c.getTagsPage(u.String(), repository)
+	tags, next, err := c.getTagsPage(u.String(), repository, reqOps...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,18 +98,16 @@ func (c *Client) RemoveTag(repository, tag string) error {
 	if err != nil {
 		return err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	_, err = doRequest(req)
+	_, err = doRequest(req, WithHubToken(c.token))
 	return err
 }
 
-func (c *Client) getTagsPage(url, repository string) ([]Tag, string, error) {
+func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", c.token)}
-	response, err := doRequest(req)
+	response, err := doRequest(req, append(reqOps, WithHubToken(c.token))...)
 	if err != nil {
 		return nil, "", err
 	}
