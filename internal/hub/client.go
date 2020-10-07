@@ -26,6 +26,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
+
+	"github.com/docker/hub-cli-plugin/internal"
 )
 
 const (
@@ -130,6 +132,7 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 
 func doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
 	req.Header["Accept"] = []string{"application/json"}
+	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
 	for _, op := range reqOps {
 		if err := op(req); err != nil {
 			return nil, err
