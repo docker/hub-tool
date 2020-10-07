@@ -80,7 +80,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			return runList(ctx, dockerCli, opts, args)
 		},
 	}
-	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
+	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available repositories")
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().SetInterspersed(false)
 	return cmd
