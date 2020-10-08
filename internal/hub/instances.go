@@ -46,7 +46,7 @@ var (
 	staging = Instance{
 		APIHubBaseURL: "https://hub-stage.docker.com",
 		RegistryInfo: &registry.IndexInfo{
-			Name:     "index-stage.docker.io",
+			Name:     "registry-stage.docker.io",
 			Mirrors:  nil,
 			Secure:   true,
 			Official: false,
@@ -56,7 +56,7 @@ var (
 	prod = Instance{
 		APIHubBaseURL: "https://hub.docker.com",
 		RegistryInfo: &registry.IndexInfo{
-			Name:     "index.docker.io",
+			Name:     "registry.docker.io",
 			Mirrors:  nil,
 			Secure:   true,
 			Official: true,
