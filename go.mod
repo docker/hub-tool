@@ -6,6 +6,7 @@ require (
 	github.com/bitly/go-hostpool v0.1.0 // indirect
 	github.com/bugsnag/bugsnag-go v1.5.3 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cli/cli v1.1.0
 	github.com/cloudflare/cfssl v1.4.1 // indirect
 	github.com/containerd/containerd v1.4.0-0
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
@@ -18,7 +19,6 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.3 // indirect
