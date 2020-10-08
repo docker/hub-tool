@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-cli-plugin/internal/commands/account"
 	"github.com/docker/hub-cli-plugin/internal/commands/org"
 	"github.com/docker/hub-cli-plugin/internal/commands/repo"
 	"github.com/docker/hub-cli-plugin/internal/commands/tag"
@@ -51,6 +52,7 @@ func NewRootCmd(ctx context.Context, dockerCli command.Cli, name string) *cobra.
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
 
 	cmd.AddCommand(
+		account.NewAccountCmd(ctx, dockerCli),
 		org.NewOrgCmd(ctx, dockerCli),
 		repo.NewRepoCmd(ctx, dockerCli),
 		tag.NewTagCmd(ctx, dockerCli),
