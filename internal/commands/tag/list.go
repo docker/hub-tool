@@ -25,6 +25,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
@@ -243,6 +244,7 @@ func promptCallToAction(out io.Writer, client accountInfo) error {
 	if plan.Name != hub.FreePlan {
 		return nil
 	}
-	_, err = fmt.Fprint(out, callToAction)
+
+	_, err = fmt.Fprint(out, utils.Blue(callToAction))
 	return err
 }
