@@ -25,6 +25,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
@@ -38,7 +39,10 @@ import (
 )
 
 const (
-	lsName = "ls"
+	lsName       = "ls"
+	callToAction = `You are currently on a free plan so your images may expire.
+Images do not expire on Pro and Team plans, to find out more https://short/link
+`
 )
 
 var (
@@ -153,6 +157,10 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repos
 	if err != nil {
 		return err
 	}
+	if err := promptCallToAction(dockerCli.Out(), client); err != nil {
+		fmt.Fprint(dockerCli.Err(), err)
+	}
+
 	var reqOps []hub.RequestOp
 	if ordering != "" {
 		reqOps = append(reqOps, hub.WithSortingOrder(ordering))
@@ -217,4 +225,26 @@ func mapOrdering(order string) (string, error) {
 	default:
 		return "", fmt.Errorf(`unknown sorting column %q: should be either "name" or "updated"`, fields[0])
 	}
+}
+
+type accountInfo interface {
+	GetUserInfo() (*hub.User, error)
+	GetHubPlan(string) (*hub.Plan, error)
+}
+
+func promptCallToAction(out io.Writer, client accountInfo) error {
+	user, err := client.GetUserInfo()
+	if err != nil {
+		return err
+	}
+	plan, err := client.GetHubPlan(user.ID)
+	if err != nil {
+		return err
+	}
+	if plan.Name != hub.FreePlan {
+		return nil
+	}
+
+	_, err = fmt.Fprint(out, utils.Blue(callToAction))
+	return err
 }

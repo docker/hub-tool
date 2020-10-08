@@ -17,9 +17,12 @@
 package tag
 
 import (
+	"bytes"
 	"testing"
 
 	"gotest.tools/assert"
+
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 func TestMappingSortFieldToOrderingAPI(t *testing.T) {
@@ -79,6 +82,47 @@ func TestMappingSortFieldToOrderingAPI(t *testing.T) {
 			} else {
 				assert.Equal(t, actualOrdering, testCase.ordering)
 			}
+		})
+	}
+}
+
+type accountStub struct {
+	plan string
+}
+
+func (a *accountStub) GetUserInfo() (*hub.User, error) {
+	return &hub.User{}, nil
+}
+
+func (a *accountStub) GetHubPlan(string) (*hub.Plan, error) {
+	return &hub.Plan{Name: a.plan}, nil
+}
+
+func TestPromptCallToActionForFreeUser(t *testing.T) {
+	testCases := []struct {
+		name    string
+		account accountStub
+		output  string
+	}{
+		{
+			name:    "free plan has CTA",
+			account: accountStub{plan: "free"},
+			output: `You are currently on a free plan so your images may expire.
+Images do not expire on Pro and Team plans, to find out more https://short/link
+`,
+		},
+		{
+			name:    "pro plan shows nothing",
+			account: accountStub{plan: "pro"},
+			output:  "",
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			buf := bytes.NewBuffer(nil)
+			err := promptCallToAction(buf, &testCase.account)
+			assert.NilError(t, err)
+			assert.Equal(t, buf.String(), testCase.output)
 		})
 	}
 }
