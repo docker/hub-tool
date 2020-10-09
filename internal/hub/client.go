@@ -62,6 +62,10 @@ type RequestOp func(r *http.Request) error
 func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
+	// Check if the user is logged in
+	if hubAuthConfig.Username == "" {
+		return nil, &authenticationError{}
+	}
 	client := &Client{
 		AuthConfig: hubAuthConfig,
 		domain:     hubInstance.APIHubBaseURL,
