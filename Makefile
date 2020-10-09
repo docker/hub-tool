@@ -55,7 +55,7 @@ e2e-build:
 
 .PHONY: e2e
 e2e: e2e-build ## Run the end-to-end tests
-	@docker run $(E2E_ENV) --rm \
+	docker run $(E2E_ENV) --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(shell go env GOCACHE):/root/.cache/go-build \
 		-v $(shell go env GOMODCACHE):/go/pkg/mod \
