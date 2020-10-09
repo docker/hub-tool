@@ -68,7 +68,7 @@ func (c *Client) getTeamsPage(url, organization string) ([]Team, string, error) 
 	if err != nil {
 		return nil, "", err
 	}
-	response, err := doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, "", err
 	}

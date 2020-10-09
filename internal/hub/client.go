@@ -18,6 +18,7 @@ package hub
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -39,6 +40,7 @@ const (
 
 //Client sends authenticated calls to the Hub API
 type Client struct {
+	ctx              context.Context
 	domain           string
 	token            string
 	fetchAllElements bool
@@ -58,19 +60,19 @@ type RequestOp func(r *http.Request) error
 func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
-	token, err := login(hubInstance.APIHubBaseURL, hubAuthConfig)
-	if err != nil {
-		return nil, err
-	}
 	client := &Client{
 		domain: hubInstance.APIHubBaseURL,
-		token:  token,
 	}
 	for _, op := range ops {
 		if err := op(client); err != nil {
 			return nil, err
 		}
 	}
+	token, err := client.login(hubInstance.APIHubBaseURL, hubAuthConfig)
+	if err != nil {
+		return nil, err
+	}
+	client.token = token
 	return client, nil
 }
 
@@ -78,6 +80,14 @@ func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 func WithAllElements() ClientOp {
 	return func(c *Client) error {
 		c.fetchAllElements = true
+		return nil
+	}
+}
+
+//WithContext set the client context
+func WithContext(ctx context.Context) ClientOp {
+	return func(c *Client) error {
+		c.ctx = ctx
 		return nil
 	}
 }
@@ -103,7 +113,7 @@ func WithSortingOrder(order string) RequestOp {
 	}
 }
 
-func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
+func (c *Client) login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	data, err := json.Marshal(hubAuthConfig)
 	if err != nil {
 		return "", err
@@ -116,7 +126,7 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 		return "", err
 	}
 	req.Header["Content-Type"] = []string{"application/json"}
-	buf, err := doRequest(req)
+	buf, err := c.doRequest(req)
 	if err != nil {
 		return "", err
 	}
@@ -130,13 +140,16 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	return creds.Token, nil
 }
 
-func doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
+func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
 	req.Header["Accept"] = []string{"application/json"}
 	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
 	for _, op := range reqOps {
 		if err := op(req); err != nil {
 			return nil, err
 		}
+	}
+	if c.ctx != nil {
+		req = req.WithContext(c.ctx)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
