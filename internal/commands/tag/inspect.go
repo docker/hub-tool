@@ -29,6 +29,7 @@ import (
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/distribution/reference"
+	"github.com/docker/go-units"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
 
@@ -117,30 +118,30 @@ func printManifest(raw []byte, descriptor ocispec.Descriptor, image string, out 
 	fmt.Fprintf(w, "Name:\t%s\n", ref.String())
 	fmt.Fprintf(w, "MediaType:\t%s\n", descriptor.MediaType)
 	fmt.Fprintf(w, "Digest:\t%s\n", descriptor.Digest)
-	fmt.Fprintf(w, "\t\n")
+	fmt.Fprintf(w, "\n")
 	if err := w.Flush(); err != nil {
 		return err
 	}
 
 	w = tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, "Config:\t\n")
+	fmt.Fprintf(w, "Config:\n")
 	fmt.Fprintf(w, "%sMediaType:\t%s\n", pfx, manifest.Config.MediaType)
-	fmt.Fprintf(w, "%sSize:\t%v\n", pfx, manifest.Config.Size)
+	fmt.Fprintf(w, "%sSize:\t%v\n", pfx, units.HumanSize(float64(manifest.Config.Size)))
 	fmt.Fprintf(w, "%sDigest:\t%s\n", pfx, manifest.Config.Digest)
-	fmt.Fprintf(w, "\t\n")
+	fmt.Fprintf(w, "\n")
 	if err := w.Flush(); err != nil {
 		return err
 	}
 
-	w = tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, "Layers:\t\n")
+	w = tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
+	fmt.Fprintf(w, "Layers:\n")
 	for i, layer := range manifest.Layers {
 		if i != 0 {
-			fmt.Fprintf(w, "\t\n")
+			fmt.Fprintf(w, "\n")
 		}
 		fmt.Fprintf(w, "%sMediaType:\t%s\n", pfx, layer.MediaType)
-		fmt.Fprintf(w, "%sSize:\t%v\n", pfx, manifest.Config.Size)
-		fmt.Fprintf(w, "%sDigest:\t%s\n", pfx, manifest.Config.Digest)
+		fmt.Fprintf(w, "%sSize:\t%v\n", pfx, units.HumanSize(float64(layer.Size)))
+		fmt.Fprintf(w, "%sDigest:\t%s\n", pfx, layer.Digest)
 	}
 
 	return w.Flush()
