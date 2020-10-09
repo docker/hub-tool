@@ -17,22 +17,23 @@
 package tag
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"text/tabwriter"
 
 	"github.com/containerd/containerd/images"
 	"github.com/docker/buildx/util/imagetools"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
+	clitypes "github.com/docker/cli/cli/config/types"
 	"github.com/docker/distribution/reference"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-units"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-cli-plugin/internal/hub"
 	"github.com/docker/hub-cli-plugin/internal/metrics"
 )
 
@@ -44,7 +45,7 @@ type inspectOptions struct {
 	format string
 }
 
-func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts inspectOptions
 	cmd := &cobra.Command{
 		Use:   inspectName + " [OPTIONS] REPOSITORY:TAG",
@@ -54,7 +55,7 @@ func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 			metrics.Send(parent, inspectName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runInspect(ctx, dockerCli, opts, args[0])
+			return runInspect(streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json")`)
@@ -62,18 +63,20 @@ func newInspectCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 	return cmd
 }
 
-func runInspect(ctx context.Context, dockerCli command.Cli, opts inspectOptions, image string) error {
+func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOptions, image string) error {
 	resolver := imagetools.New(imagetools.Opt{
-		Auth: dockerCli.ConfigFile(),
+		Auth: &authResolver{
+			authConfig: convert(hubClient.AuthConfig),
+		},
 	})
 
-	raw, descriptor, err := resolver.Get(ctx, image)
+	raw, descriptor, err := resolver.Get(hubClient.Ctx, image)
 	if err != nil {
 		return err
 	}
 
 	if opts.format == "json" {
-		fmt.Printf("%s", raw) // avoid newline to keep digest
+		fmt.Fprintf(streams.Out(), "%s", raw) // avoid newline to keep digest
 		return nil
 	} else if opts.format != "" {
 		return fmt.Errorf("unsupported format type: %q", opts.format)
@@ -83,15 +86,15 @@ func runInspect(ctx context.Context, dockerCli command.Cli, opts inspectOptions,
 	// case images.MediaTypeDockerSchema2Manifest, specs.MediaTypeImageManifest:
 	// TODO: handle distribution manifest and schema1
 	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
-		if err := imagetools.PrintManifestList(raw, descriptor, image, os.Stdout); err != nil {
+		if err := imagetools.PrintManifestList(raw, descriptor, image, streams.Out()); err != nil {
 			return err
 		}
 	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
-		if err := printManifest(raw, descriptor, image, os.Stdout); err != nil {
+		if err := printManifest(raw, descriptor, image, streams.Out()); err != nil {
 			return err
 		}
 	default:
-		fmt.Printf("%s\n", raw)
+		fmt.Fprintf(streams.Out(), "%s\n", raw)
 	}
 
 	return nil
@@ -145,4 +148,24 @@ func printManifest(raw []byte, descriptor ocispec.Descriptor, image string, out 
 	}
 
 	return w.Flush()
+}
+
+type authResolver struct {
+	authConfig clitypes.AuthConfig
+}
+
+func (a *authResolver) GetAuthConfig(registryHostname string) (clitypes.AuthConfig, error) {
+	return a.authConfig, nil
+}
+
+func convert(config types.AuthConfig) clitypes.AuthConfig {
+	return clitypes.AuthConfig{
+		Username:      config.Username,
+		Password:      config.Password,
+		Auth:          config.Auth,
+		Email:         config.Email,
+		ServerAddress: config.ServerAddress,
+		IdentityToken: config.IdentityToken,
+		RegistryToken: config.RegistryToken,
+	}
 }

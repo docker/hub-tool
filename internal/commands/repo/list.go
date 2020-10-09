@@ -17,18 +17,14 @@
 package repo
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
@@ -67,7 +63,7 @@ type listOptions struct {
 	all bool
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:   listName + " [ORGANIZATION]",
@@ -77,7 +73,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, listName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, opts, args)
+			return runList(streams, hubClient, opts, args)
 		},
 	}
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available repositories")
@@ -86,30 +82,22 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, args []string) error {
-	var account string
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		authConfig := command.ResolveAuthConfig(ctx, dockerCli, hub)
-		account = authConfig.Username
-		return authConfig
-	}
-	var clientOps []hub.ClientOp
+func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, args []string) error {
+	account := hubClient.AuthConfig.Username
 	if opts.all {
-		clientOps = append(clientOps, hub.WithAllElements())
-	}
-	client, err := hub.NewClient(authResolver, clientOps...)
-	if err != nil {
-		return err
+		if err := hubClient.Apply(hub.WithAllElements()); err != nil {
+			return err
+		}
 	}
 	if len(args) > 0 {
 		account = args[0]
 	}
-	repositories, err := client.GetRepositories(account)
+	repositories, err := hubClient.GetRepositories(account)
 	if err != nil {
 		return err
 	}
 
-	return opts.Print(os.Stdout, repositories, printRepositories)
+	return opts.Print(streams.Out(), repositories, printRepositories)
 }
 
 func printRepositories(out io.Writer, values interface{}) error {

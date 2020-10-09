@@ -40,7 +40,9 @@ const (
 
 //Client sends authenticated calls to the Hub API
 type Client struct {
-	ctx              context.Context
+	AuthConfig types.AuthConfig
+	Ctx        context.Context
+
 	domain           string
 	token            string
 	fetchAllElements bool
@@ -61,7 +63,8 @@ func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
 	client := &Client{
-		domain: hubInstance.APIHubBaseURL,
+		AuthConfig: hubAuthConfig,
+		domain:     hubInstance.APIHubBaseURL,
 	}
 	for _, op := range ops {
 		if err := op(client); err != nil {
@@ -76,6 +79,16 @@ func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	return client, nil
 }
 
+//Apply changes client behavior using ClientOp
+func (c *Client) Apply(ops ...ClientOp) error {
+	for _, op := range ops {
+		if err := op(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 //WithAllElements makes the client fetch all the elements it can find, enabling pagination.
 func WithAllElements() ClientOp {
 	return func(c *Client) error {
@@ -87,7 +100,7 @@ func WithAllElements() ClientOp {
 //WithContext set the client context
 func WithContext(ctx context.Context) ClientOp {
 	return func(c *Client) error {
-		c.ctx = ctx
+		c.Ctx = ctx
 		return nil
 	}
 }
@@ -148,8 +161,8 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 			return nil, err
 		}
 	}
-	if c.ctx != nil {
-		req = req.WithContext(c.ctx)
+	if c.Ctx != nil {
+		req = req.WithContext(c.Ctx)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
