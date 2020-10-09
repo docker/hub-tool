@@ -17,17 +17,13 @@
 package org
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/format"
@@ -55,7 +51,7 @@ type memberOptions struct {
 	format.Option
 }
 
-func newMembersCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newMembersCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts memberOptions
 	cmd := &cobra.Command{
 		Use:   membersName + " ORGANIZATION",
@@ -65,7 +61,7 @@ func newMembersCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 			metrics.Send(parent, membersName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMembers(ctx, dockerCli, opts, args[0])
+			return runMembers(streams, hubClient, opts, args[0])
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
@@ -73,19 +69,12 @@ func newMembersCmd(ctx context.Context, dockerCli command.Cli, parent string) *c
 	return cmd
 }
 
-func runMembers(ctx context.Context, dockerCli command.Cli, opts memberOptions, organization string) error {
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
-	}
-	client, err := hub.NewClient(authResolver)
+func runMembers(streams command.Streams, hubClient *hub.Client, opts memberOptions, organization string) error {
+	members, err := hubClient.GetMembers(organization)
 	if err != nil {
 		return err
 	}
-	members, err := client.GetMembers(organization)
-	if err != nil {
-		return err
-	}
-	return opts.Print(os.Stdout, members, printMembers)
+	return opts.Print(streams.Out(), members, printMembers)
 }
 
 func printMembers(out io.Writer, values interface{}) error {

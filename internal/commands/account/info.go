@@ -17,18 +17,14 @@
 package account
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"os"
 	"text/tabwriter"
 	"time"
 
 	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
@@ -45,7 +41,7 @@ type infoOptions struct {
 	format.Option
 }
 
-func newInfoCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts infoOptions
 	cmd := &cobra.Command{
 		Use:   infoName + " [OPTIONS]",
@@ -55,7 +51,7 @@ func newInfoCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, infoName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInfo(ctx, dockerCli, opts)
+			return runInfo(streams, hubClient, opts)
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
@@ -63,23 +59,16 @@ func newInfoCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	return cmd
 }
 
-func runInfo(ctx context.Context, dockerCli command.Cli, opts infoOptions) error {
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
-	}
-	client, err := hub.NewClient(authResolver)
+func runInfo(streams command.Streams, hubClient *hub.Client, opts infoOptions) error {
+	user, err := hubClient.GetUserInfo()
 	if err != nil {
 		return err
 	}
-	user, err := client.GetUserInfo()
+	plan, err := hubClient.GetHubPlan(user.ID)
 	if err != nil {
 		return err
 	}
-	plan, err := client.GetHubPlan(user.ID)
-	if err != nil {
-		return err
-	}
-	return opts.Print(os.Stdout, account{user, plan}, printAccount)
+	return opts.Print(streams.Out(), account{user, plan}, printAccount)
 }
 
 func printAccount(out io.Writer, value interface{}) error {

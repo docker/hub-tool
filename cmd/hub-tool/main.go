@@ -25,8 +25,11 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	cliflags "github.com/docker/cli/cli/flags"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 
 	"github.com/docker/hub-cli-plugin/internal/commands"
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 func main() {
@@ -43,7 +46,17 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	rootCmd := commands.NewRootCmd(ctx, dockerCli, os.Args[0])
+	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
+		return command.ResolveAuthConfig(ctx, dockerCli, hub)
+	}
+
+	hubClient, err := hub.NewClient(authResolver, hub.WithContext(ctx))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	rootCmd := commands.NewRootCmd(dockerCli, hubClient, os.Args[0])
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

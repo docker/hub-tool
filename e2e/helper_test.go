@@ -17,7 +17,6 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -35,7 +34,6 @@ func hubToolCmd(t *testing.T, args ...string) (icmd.Cmd, func()) {
 	hubTool := os.Getenv("BINARY")
 	configDir := fs.NewDir(t, t.Name())
 	cleanup := env.Patch(t, "PATH", os.Getenv("PATH")+getPathSeparator()+filepath.Join(pwd, "..", "bin"))
-	fmt.Println(os.Getenv("PATH"), os.Getenv("PWD"))
 	env := append(os.Environ(), "DOCKER_CONFIG="+configDir.Path())
 	return icmd.Cmd{Command: append([]string{hubTool}, args...), Env: env}, func() { cleanup(); configDir.Remove() }
 }

@@ -17,11 +17,11 @@
 package account
 
 import (
-	"context"
-
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 const (
@@ -29,15 +29,15 @@ const (
 )
 
 //NewAccountCmd configures the org manage command
-func NewAccountCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func NewAccountCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  accountName,
 		Long: "Manage organizations",
 		Args: cli.NoArgs,
-		RunE: command.ShowHelp(dockerCli.Err()),
+		RunE: command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
-		newInfoCmd(ctx, dockerCli, accountName),
+		newInfoCmd(streams, hubClient, accountName),
 	)
 	return cmd
 }

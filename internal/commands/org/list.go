@@ -17,17 +17,13 @@
 package org
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/format"
@@ -58,7 +54,7 @@ type listOptions struct {
 	format.Option
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:   listName,
@@ -68,7 +64,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, listName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, opts)
+			return runList(streams, hubClient, opts)
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
@@ -76,19 +72,12 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, opts listOptions) error {
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
-	}
-	client, err := hub.NewClient(authResolver)
+func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) error {
+	organizations, err := hubClient.GetOrganizations()
 	if err != nil {
 		return err
 	}
-	organizations, err := client.GetOrganizations()
-	if err != nil {
-		return err
-	}
-	return opts.Print(os.Stdout, organizations, printOrganizations)
+	return opts.Print(streams.Out(), organizations, printOrganizations)
 }
 
 func printOrganizations(out io.Writer, values interface{}) error {

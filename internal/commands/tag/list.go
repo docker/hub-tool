@@ -17,10 +17,8 @@
 package tag
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -28,8 +26,6 @@ import (
 	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
@@ -120,7 +116,7 @@ type listOptions struct {
 	sort      string
 }
 
-func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:   lsName + " [OPTION] REPOSITORY",
@@ -130,7 +126,7 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 			metrics.Send(parent, lsName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runList(ctx, dockerCli, opts, args[0])
+			return runList(streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVar(&opts.platforms, "platforms", false, "List all available platforms per tag")
@@ -141,31 +137,25 @@ func newListCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobr
 	return cmd
 }
 
-func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repository string) error {
+func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, repository string) error {
 	ordering, err := mapOrdering(opts.sort)
 	if err != nil {
 		return err
 	}
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
-	}
-	var clientOps []hub.ClientOp
 	if opts.all {
-		clientOps = append(clientOps, hub.WithAllElements())
+		if err := hubClient.Apply(hub.WithAllElements()); err != nil {
+			return err
+		}
 	}
-	client, err := hub.NewClient(authResolver, clientOps...)
-	if err != nil {
-		return err
-	}
-	if err := promptCallToAction(dockerCli.Out(), client); err != nil {
-		fmt.Fprint(dockerCli.Err(), err)
+	if err := promptCallToAction(streams.Err(), hubClient); err != nil {
+		fmt.Fprint(streams.Err(), err)
 	}
 
 	var reqOps []hub.RequestOp
 	if ordering != "" {
 		reqOps = append(reqOps, hub.WithSortingOrder(ordering))
 	}
-	tags, err := client.GetTags(repository, reqOps...)
+	tags, err := hubClient.GetTags(repository, reqOps...)
 	if err != nil {
 		return err
 	}
@@ -174,7 +164,7 @@ func runList(ctx context.Context, dockerCli command.Cli, opts listOptions, repos
 		defaultColumns = append(defaultColumns, platformColumn)
 	}
 
-	return opts.Print(os.Stdout, tags, printTags)
+	return opts.Print(streams.Out(), tags, printTags)
 }
 
 func printTags(out io.Writer, values interface{}) error {
