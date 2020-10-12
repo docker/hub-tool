@@ -17,7 +17,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/docker/cli/cli/command"
@@ -28,6 +27,7 @@ import (
 	"github.com/docker/hub-cli-plugin/internal/commands/org"
 	"github.com/docker/hub-cli-plugin/internal/commands/repo"
 	"github.com/docker/hub-cli-plugin/internal/commands/tag"
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 type options struct {
@@ -35,7 +35,7 @@ type options struct {
 }
 
 //NewRootCmd returns the main command
-func NewRootCmd(ctx context.Context, dockerCli command.Cli, name string) *cobra.Command {
+func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *cobra.Command {
 	var flags options
 	cmd := &cobra.Command{
 		Use:         name,
@@ -52,10 +52,10 @@ func NewRootCmd(ctx context.Context, dockerCli command.Cli, name string) *cobra.
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
 
 	cmd.AddCommand(
-		account.NewAccountCmd(ctx, dockerCli),
-		org.NewOrgCmd(ctx, dockerCli),
-		repo.NewRepoCmd(ctx, dockerCli),
-		tag.NewTagCmd(ctx, dockerCli),
+		account.NewAccountCmd(streams, hubClient),
+		org.NewOrgCmd(streams, hubClient),
+		repo.NewRepoCmd(streams, hubClient),
+		tag.NewTagCmd(streams, hubClient),
 	)
 	return cmd
 }

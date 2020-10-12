@@ -34,6 +34,7 @@ func TestDoRequestAddsCustomUserAgent(t *testing.T) {
 	defer server.Close()
 	req, err := http.NewRequest("GET", server.URL, nil)
 	assert.NilError(t, err)
-	_, err = doRequest(req)
+	client := Client{}
+	_, err = client.doRequest(req)
 	assert.NilError(t, err)
 }

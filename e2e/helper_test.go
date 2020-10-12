@@ -17,12 +17,14 @@
 package e2e
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/docker/cli/cli/config/configfile"
+	clitypes "github.com/docker/cli/cli/config/types"
 	"gotest.tools/assert"
 	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
@@ -30,13 +32,25 @@ import (
 )
 
 func hubToolCmd(t *testing.T, args ...string) (icmd.Cmd, func()) {
+	user := os.Getenv("E2E_HUB_USERNAME")
+	token := os.Getenv("E2E_HUB_TOKEN")
+
+	config := configfile.ConfigFile{
+		AuthConfigs: map[string]clitypes.AuthConfig{"https://index.docker.io/v1/": {
+			Username: user,
+			Password: token,
+		}},
+	}
+	data, err := json.Marshal(&config)
+	assert.NilError(t, err)
+
 	pwd, err := os.Getwd()
 	assert.NilError(t, err)
 	hubTool := os.Getenv("BINARY")
-	configDir := fs.NewDir(t, t.Name())
+	configDir := fs.NewDir(t, t.Name(), fs.WithFile("config.json", string(data)))
 	cleanup := env.Patch(t, "PATH", os.Getenv("PATH")+getPathSeparator()+filepath.Join(pwd, "..", "bin"))
-	fmt.Println(os.Getenv("PATH"), os.Getenv("PWD"))
 	env := append(os.Environ(), "DOCKER_CONFIG="+configDir.Path())
+
 	return icmd.Cmd{Command: append([]string{hubTool}, args...), Env: env}, func() { cleanup(); configDir.Remove() }
 }
 

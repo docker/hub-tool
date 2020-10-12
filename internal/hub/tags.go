@@ -98,7 +98,7 @@ func (c *Client) RemoveTag(repository, tag string) error {
 	if err != nil {
 		return err
 	}
-	_, err = doRequest(req, WithHubToken(c.token))
+	_, err = c.doRequest(req, WithHubToken(c.token))
 	return err
 }
 
@@ -107,7 +107,7 @@ func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag
 	if err != nil {
 		return nil, "", err
 	}
-	response, err := doRequest(req, append(reqOps, WithHubToken(c.token))...)
+	response, err := c.doRequest(req, append(reqOps, WithHubToken(c.token))...)
 	if err != nil {
 		return nil, "", err
 	}

@@ -14,32 +14,24 @@
    limitations under the License.
 */
 
-package tag
+package e2e
 
 import (
-	"github.com/docker/cli/cli"
-	"github.com/docker/cli/cli/command"
-	"github.com/spf13/cobra"
+	"testing"
 
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"gotest.tools/v3/icmd"
 )
 
-const (
-	tagName = "tag"
-)
+func TestUserNeedsToBeLoggedIn(t *testing.T) {
+	cmd, cleanup := hubToolCmd(t, "--version")
+	// Remove the config file
+	cleanup()
 
-//NewTagCmd configures the tag manage command
-func NewTagCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:  tagName,
-		Long: "Manage tags",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(streams.Err()),
-	}
-	cmd.AddCommand(
-		newInspectCmd(streams, hubClient, tagName),
-		newListCmd(streams, hubClient, tagName),
-		newRmCmd(streams, hubClient, tagName),
-	)
-	return cmd
+	output := icmd.RunCmd(cmd)
+	output.Equal(icmd.Expected{
+		ExitCode: 1,
+		Out: `You need to be logged in to Docker Hub to use this tool.
+Please login to Docker Hub using the "docker login" command
+`,
+	})
 }

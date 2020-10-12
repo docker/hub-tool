@@ -18,6 +18,7 @@ package hub
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -39,6 +40,9 @@ const (
 
 //Client sends authenticated calls to the Hub API
 type Client struct {
+	AuthConfig types.AuthConfig
+	Ctx        context.Context
+
 	domain           string
 	token            string
 	fetchAllElements bool
@@ -58,26 +62,49 @@ type RequestOp func(r *http.Request) error
 func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
-	token, err := login(hubInstance.APIHubBaseURL, hubAuthConfig)
-	if err != nil {
-		return nil, err
+	// Check if the user is logged in
+	if hubAuthConfig.Username == "" {
+		return nil, &authenticationError{}
 	}
 	client := &Client{
-		domain: hubInstance.APIHubBaseURL,
-		token:  token,
+		AuthConfig: hubAuthConfig,
+		domain:     hubInstance.APIHubBaseURL,
 	}
 	for _, op := range ops {
 		if err := op(client); err != nil {
 			return nil, err
 		}
 	}
+	token, err := client.login(hubInstance.APIHubBaseURL, hubAuthConfig)
+	if err != nil {
+		return nil, err
+	}
+	client.token = token
 	return client, nil
+}
+
+//Apply changes client behavior using ClientOp
+func (c *Client) Apply(ops ...ClientOp) error {
+	for _, op := range ops {
+		if err := op(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //WithAllElements makes the client fetch all the elements it can find, enabling pagination.
 func WithAllElements() ClientOp {
 	return func(c *Client) error {
 		c.fetchAllElements = true
+		return nil
+	}
+}
+
+//WithContext set the client context
+func WithContext(ctx context.Context) ClientOp {
+	return func(c *Client) error {
+		c.Ctx = ctx
 		return nil
 	}
 }
@@ -103,7 +130,7 @@ func WithSortingOrder(order string) RequestOp {
 	}
 }
 
-func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
+func (c *Client) login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	data, err := json.Marshal(hubAuthConfig)
 	if err != nil {
 		return "", err
@@ -116,7 +143,7 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 		return "", err
 	}
 	req.Header["Content-Type"] = []string{"application/json"}
-	buf, err := doRequest(req)
+	buf, err := c.doRequest(req)
 	if err != nil {
 		return "", err
 	}
@@ -130,13 +157,16 @@ func login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
 	return creds.Token, nil
 }
 
-func doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
+func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
 	req.Header["Accept"] = []string{"application/json"}
 	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
 	for _, op := range reqOps {
 		if err := op(req); err != nil {
 			return nil, err
 		}
+	}
+	if c.Ctx != nil {
+		req = req.WithContext(c.Ctx)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

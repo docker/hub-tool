@@ -17,11 +17,11 @@
 package org
 
 import (
-	"context"
-
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 const (
@@ -29,17 +29,17 @@ const (
 )
 
 //NewOrgCmd configures the org manage command
-func NewOrgCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func NewOrgCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  orgName,
 		Long: "Manage organizations",
 		Args: cli.NoArgs,
-		RunE: command.ShowHelp(dockerCli.Err()),
+		RunE: command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
-		newListCmd(ctx, dockerCli, orgName),
-		newMembersCmd(ctx, dockerCli, orgName),
-		newTeamsCmd(ctx, dockerCli, orgName),
+		newListCmd(streams, hubClient, orgName),
+		newMembersCmd(streams, hubClient, orgName),
+		newTeamsCmd(streams, hubClient, orgName),
 	)
 	return cmd
 }

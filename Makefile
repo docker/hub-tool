@@ -55,14 +55,21 @@ e2e-build:
 
 .PHONY: e2e
 e2e: e2e-build ## Run the end-to-end tests
-	@docker run $(E2E_ENV) --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(shell go env GOCACHE):/root/.cache/go-build $(BINARY_NAME):e2e
+	docker run $(E2E_ENV) --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(shell go env GOCACHE):/root/.cache/go-build \
+		-v $(shell go env GOMODCACHE):/go/pkg/mod \
+		$(BINARY_NAME):e2e
 
 test-unit-build:
 	docker build $(BUILD_ARGS) . --target test-unit -t $(BINARY_NAME):test-unit
 
 .PHONY: test-unit
 test-unit: test-unit-build ## Run unit tests
-	docker run --rm -v $(shell go env GOCACHE):/root/.cache/go-build $(BINARY_NAME):test-unit
+	docker run --rm \
+		-v $(shell go env GOCACHE):/root/.cache/go-build \
+		-v $(shell go env GOMODCACHE):/go/pkg/mod \
+		$(BINARY_NAME):test-unit
 
 .PHONY: lint
 lint: ## Run the go linter
