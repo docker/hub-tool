@@ -17,11 +17,11 @@
 package repo
 
 import (
-	"context"
-
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 const (
@@ -29,16 +29,16 @@ const (
 )
 
 //NewRepoCmd configures the repo manage command
-func NewRepoCmd(ctx context.Context, dockerCli command.Cli) *cobra.Command {
+func NewRepoCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  repoName,
 		Long: "Manage repositories",
 		Args: cli.NoArgs,
-		RunE: command.ShowHelp(dockerCli.Err()),
+		RunE: command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
-		newListCmd(ctx, dockerCli, repoName),
-		newRmCmd(ctx, dockerCli, repoName),
+		newListCmd(streams, hubClient, repoName),
+		newRmCmd(streams, hubClient, repoName),
 	)
 	return cmd
 }

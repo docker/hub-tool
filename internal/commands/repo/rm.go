@@ -18,16 +18,12 @@ package repo
 
 import (
 	"bufio"
-	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-cli-plugin/internal/hub"
@@ -42,7 +38,7 @@ type rmOptions struct {
 	force bool
 }
 
-func newRmCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.Command {
+func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
 	cmd := &cobra.Command{
 		Use:   rmName + " [OPTIONS] REPOSITORY",
@@ -52,7 +48,7 @@ func newRmCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.
 			metrics.Send(parent, rmName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runRm(ctx, dockerCli, opts, args[0])
+			return runRm(streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the repository")
@@ -60,7 +56,7 @@ func newRmCmd(ctx context.Context, dockerCli command.Cli, parent string) *cobra.
 	return cmd
 }
 
-func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, repository string) error {
+func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, repository string) error {
 	ref, err := reference.Parse(repository)
 	if err != nil {
 		return err
@@ -71,8 +67,8 @@ func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, repositor
 	}
 
 	if !opts.force {
-		fmt.Println("Please type the name of your repository to confirm deletion:", namedRef.Name())
-		reader := bufio.NewReader(os.Stdin)
+		fmt.Fprintln(streams.Out(), "Please type the name of your repository to confirm deletion:", namedRef.Name())
+		reader := bufio.NewReader(streams.In())
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
 		if input != namedRef.Name() {
@@ -80,16 +76,9 @@ func runRm(ctx context.Context, dockerCli command.Cli, opts rmOptions, repositor
 		}
 	}
 
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
-	}
-	client, err := hub.NewClient(authResolver)
-	if err != nil {
+	if err := hubClient.RemoveRepository(namedRef.Name()); err != nil {
 		return err
 	}
-	if err := client.RemoveRepository(namedRef.Name()); err != nil {
-		return err
-	}
-	fmt.Println("Deleted", repository)
+	fmt.Fprintln(streams.Out(), "Deleted", repository)
 	return nil
 }

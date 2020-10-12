@@ -14,32 +14,21 @@
    limitations under the License.
 */
 
-package tag
+package hub
 
 import (
-	"github.com/docker/cli/cli"
-	"github.com/docker/cli/cli/command"
-	"github.com/spf13/cobra"
+	"errors"
+	"testing"
 
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"gotest.tools/v3/assert"
 )
 
-const (
-	tagName = "tag"
-)
+func TestIsAuthenticationError(t *testing.T) {
+	assert.Assert(t, IsAuthenticationError(&authenticationError{}))
+	assert.Assert(t, !IsAuthenticationError(errors.New("")))
+}
 
-//NewTagCmd configures the tag manage command
-func NewTagCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:  tagName,
-		Long: "Manage tags",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(streams.Err()),
-	}
-	cmd.AddCommand(
-		newInspectCmd(streams, hubClient, tagName),
-		newListCmd(streams, hubClient, tagName),
-		newRmCmd(streams, hubClient, tagName),
-	)
-	return cmd
+func TestIsInvalidTokenError(t *testing.T) {
+	assert.Assert(t, IsInvalidTokenError(&invalidTokenError{}))
+	assert.Assert(t, !IsInvalidTokenError(errors.New("")))
 }

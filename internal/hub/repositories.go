@@ -78,7 +78,7 @@ func (c *Client) RemoveRepository(repository string) error {
 	if err != nil {
 		return err
 	}
-	_, err = doRequest(req, WithHubToken(c.token))
+	_, err = c.doRequest(req, WithHubToken(c.token))
 	return err
 }
 
@@ -87,7 +87,7 @@ func (c *Client) getRepositoriesPage(url, account string) ([]Repository, string,
 	if err != nil {
 		return nil, "", err
 	}
-	response, err := doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, "", err
 	}

@@ -23,10 +23,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli/command"
 	cliflags "github.com/docker/cli/cli/flags"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 
 	"github.com/docker/hub-cli-plugin/internal/commands"
+	"github.com/docker/hub-cli-plugin/internal/hub"
 )
 
 func main() {
@@ -43,7 +47,22 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	rootCmd := commands.NewRootCmd(ctx, dockerCli, os.Args[0])
+	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
+		return command.ResolveAuthConfig(ctx, dockerCli, hub)
+	}
+
+	hubClient, err := hub.NewClient(authResolver, hub.WithContext(ctx))
+	if err != nil {
+		if hub.IsAuthenticationError(err) {
+			fmt.Println(utils.Red(`You need to be logged in to Docker Hub to use this tool.
+Please login to Docker Hub using the "docker login" command.`))
+			os.Exit(1)
+		}
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	rootCmd := commands.NewRootCmd(dockerCli, hubClient, os.Args[0])
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

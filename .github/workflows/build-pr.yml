@@ -1,5 +1,5 @@
 name: Build PR
-on: [push,pull_request]
+on: [pull_request]
 
 jobs:
   lint:
@@ -31,7 +31,7 @@ jobs:
     env:
       GO111MODULE: "on"
       E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
-      E2E_HUB_TOKEN_TOKEN: ${{ secrets.E2E_HUB_TOKEN_TOKEN }}
+      E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
     steps:
       - name: Docker version
         run: docker version
