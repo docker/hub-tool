@@ -1,0 +1,7 @@
+* text=auto
+* text eol=lf
+*.png binary
+*.exe binary
+*.ico binary
+*.jar binary
+vendor/** -text
