@@ -23,7 +23,7 @@ import (
 
 	"gotest.tools/v3/assert"
 
-	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-tool/internal"
 )
 
 func TestDoRequestAddsCustomUserAgent(t *testing.T) {

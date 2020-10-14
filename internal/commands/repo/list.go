@@ -28,9 +28,9 @@ import (
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-cli-plugin/internal/format"
-	"github.com/docker/hub-cli-plugin/internal/hub"
-	"github.com/docker/hub-cli-plugin/internal/metrics"
+	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/internal/metrics"
 )
 
 const (

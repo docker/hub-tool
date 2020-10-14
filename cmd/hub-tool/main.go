@@ -29,8 +29,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 
-	"github.com/docker/hub-cli-plugin/internal/commands"
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-tool/internal/commands"
+	"github.com/docker/hub-tool/internal/hub"
 )
 
 func main() {

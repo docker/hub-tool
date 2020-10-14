@@ -22,7 +22,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-tool/internal/hub"
 )
 
 func TestMappingSortFieldToOrderingAPI(t *testing.T) {
