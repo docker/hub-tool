@@ -28,7 +28,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 
-	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-tool/internal"
 )
 
 const (

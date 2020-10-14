@@ -10,7 +10,7 @@ ifeq ($(TAG_NAME),)
   TAG_NAME := $(shell git describe --always --dirty --abbrev=10 2> $(NULL))
 endif
 
-PKG_NAME=github.com/docker/hub-cli-plugin
+PKG_NAME=github.com/docker/hub-tool
 STATIC_FLAGS= CGO_ENABLED=0
 LDFLAGS := "-s -w \
   -X $(PKG_NAME)/internal.GitCommit=$(COMMIT) \
