@@ -22,12 +22,12 @@ import (
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-cli-plugin/internal"
-	"github.com/docker/hub-cli-plugin/internal/commands/account"
-	"github.com/docker/hub-cli-plugin/internal/commands/org"
-	"github.com/docker/hub-cli-plugin/internal/commands/repo"
-	"github.com/docker/hub-cli-plugin/internal/commands/tag"
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-tool/internal"
+	"github.com/docker/hub-tool/internal/commands/account"
+	"github.com/docker/hub-tool/internal/commands/org"
+	"github.com/docker/hub-tool/internal/commands/repo"
+	"github.com/docker/hub-tool/internal/commands/tag"
+	"github.com/docker/hub-tool/internal/hub"
 )
 
 type options struct {

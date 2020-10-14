@@ -23,7 +23,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/icmd"
 
-	"github.com/docker/hub-cli-plugin/internal"
+	"github.com/docker/hub-tool/internal"
 )
 
 func TestVersion(t *testing.T) {

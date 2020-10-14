@@ -24,7 +24,7 @@ import (
 	"gotest.tools/golden"
 	"gotest.tools/v3/assert"
 
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-tool/internal/hub"
 )
 
 func TestInfoOutput(t *testing.T) {

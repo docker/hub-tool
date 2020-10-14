@@ -21,7 +21,7 @@ import (
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-cli-plugin/internal/hub"
+	"github.com/docker/hub-tool/internal/hub"
 )
 
 const (
