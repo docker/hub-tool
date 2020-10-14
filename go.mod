@@ -1,4 +1,4 @@
-module github.com/docker/hub-cli-plugin
+module github.com/docker/hub-tool
 
 go 1.15
 

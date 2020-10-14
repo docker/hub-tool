@@ -25,7 +25,7 @@ ARG GOLANGCI_LINT_VERSION=v1.27.0-alpine
 # BUILDER
 ####
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS builder
-WORKDIR /go/src/github.com/docker/hub-cli-plugin
+WORKDIR /go/src/github.com/docker/hub-tool
 
 # cache go vendoring
 COPY go.* ./
@@ -71,7 +71,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # HUB
 ####
 FROM scratch AS hub
-COPY --from=build /go/src/github.com/docker/hub-cli-plugin/bin/hub-tool_* /
+COPY --from=build /go/src/github.com/docker/hub-tool/bin/hub-tool_* /
 
 ####
 # CROSS_BUILD
@@ -87,7 +87,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # CROSS
 ####
 FROM scratch AS cross
-COPY --from=cross-build /go/src/github.com/docker/hub-cli-plugin/dist /
+COPY --from=cross-build /go/src/github.com/docker/hub-tool/dist /
 
 ####
 # GOTESTSUM
@@ -131,6 +131,6 @@ ENV BINARY_NAME=$BINARY_NAME
 ENV DOCKER_CONFIG="/root/.docker"
 
 # install hub tool
-COPY --from=cross-build /go/src/github.com/docker/hub-cli-plugin/dist/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-cli-plugin/bin/${BINARY}
+COPY --from=cross-build /go/src/github.com/docker/hub-tool/dist/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-tool/bin/${BINARY}
 RUN chmod +x ./bin/${BINARY}
 CMD ["make", "-f", "builder.Makefile", "e2e"]
