@@ -17,11 +17,15 @@
 package tag
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
+	"time"
 
+	"github.com/cli/cli/utils"
 	"github.com/containerd/containerd/images"
 	"github.com/docker/buildx/util/imagetools"
 	"github.com/docker/cli/cli"
@@ -45,6 +49,14 @@ type inspectOptions struct {
 	format string
 }
 
+//Image is the combination of a manifest and its config object
+type Image struct {
+	Name       reference.Named
+	Manifest   ocispec.Manifest
+	Config     ocispec.Image
+	Descriptor ocispec.Descriptor
+}
+
 func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts inspectOptions
 	cmd := &cobra.Command{
@@ -58,42 +70,38 @@ func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string
 			return runInspect(streams, hubClient, opts, args[0])
 		},
 	}
-	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json")`)
+	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json|raw")`)
 	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
-func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOptions, image string) error {
+func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOptions, imageRef string) error {
 	resolver := imagetools.New(imagetools.Opt{
 		Auth: &authResolver{
 			authConfig: convert(hubClient.AuthConfig),
 		},
 	})
 
-	raw, descriptor, err := resolver.Get(hubClient.Ctx, image)
+	raw, descriptor, err := resolver.Get(hubClient.Ctx, imageRef)
 	if err != nil {
 		return err
 	}
 
-	if opts.format == "json" {
-		fmt.Fprintf(streams.Out(), "%s", raw) // avoid newline to keep digest
-		return nil
-	} else if opts.format != "" {
-		return fmt.Errorf("unsupported format type: %q", opts.format)
+	ref, err := reference.ParseNormalizedNamed(imageRef)
+	if err != nil {
+		return err
 	}
+	ref = reference.TagNameOnly(ref)
 
 	switch descriptor.MediaType {
 	// case images.MediaTypeDockerSchema2Manifest, specs.MediaTypeImageManifest:
 	// TODO: handle distribution manifest and schema1
 	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
-		if err := imagetools.PrintManifestList(raw, descriptor, image, streams.Out()); err != nil {
-			return err
-		}
+		return formatManifestlist(streams, opts.format, raw, descriptor, imageRef)
 	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
-		if err := printManifest(raw, descriptor, image, streams.Out()); err != nil {
-			return err
-		}
+		return formatManifest(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref)
 	default:
+		fmt.Println("Other mediatype")
 		fmt.Fprintf(streams.Out(), "%s\n", raw)
 	}
 
@@ -104,50 +112,209 @@ const (
 	pfx = "  "
 )
 
-func printManifest(raw []byte, descriptor ocispec.Descriptor, image string, out io.Writer) error {
-	ref, err := reference.ParseNormalizedNamed(image)
+func formatManifestlist(streams command.Streams, format string, raw []byte, descriptor ocispec.Descriptor, imageRef string) error {
+	switch format {
+	case "json", "raw":
+		_, err := fmt.Fprintf(streams.Out(), "%s", raw) // avoid newline to keep digest
+		return err
+	case "":
+		return imagetools.PrintManifestList(raw, descriptor, imageRef, streams.Out())
+	default:
+		return fmt.Errorf("unsupported format type: %q", format)
+	}
+}
+
+func formatManifest(ctx context.Context, streams command.Streams, resolver *imagetools.Resolver, format string, raw []byte, descriptor ocispec.Descriptor, ref reference.Named) error {
+	image, err := readImage(ctx, resolver, raw, descriptor, ref)
 	if err != nil {
 		return err
 	}
-	ref = reference.TagNameOnly(ref)
+	switch format {
+	case "raw":
+		_, err := fmt.Fprintf(streams.Out(), "%s", raw) // avoid newline to keep digest
+		return err
+	case "json":
+		buf, err := json.MarshalIndent(image, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprint(streams.Out(), string(buf))
+		return err
+	case "":
+		return printImage(streams.Out(), image)
+	default:
+		return fmt.Errorf("unsupported format type: %q", format)
+	}
+}
 
+func readImage(ctx context.Context, resolver *imagetools.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, ref reference.Named) (*Image, error) {
 	var manifest ocispec.Manifest
-	if err := json.Unmarshal(raw, &manifest); err != nil {
+	if err := json.Unmarshal(rawManifest, &manifest); err != nil {
+		return nil, err
+	}
+
+	configRef := fmt.Sprintf("%s@%s", ref.Name(), manifest.Config.Digest)
+	configRaw, err := resolver.GetDescriptor(ctx, configRef, manifest.Config)
+	if err != nil {
+		return nil, err
+	}
+	var config ocispec.Image
+	if err := json.Unmarshal(configRaw, &config); err != nil {
+		return nil, err
+	}
+	return &Image{ref, manifest, config, descriptor}, nil
+}
+
+func printImage(out io.Writer, image *Image) error {
+	if err := printManifest(out, image); err != nil {
+		return err
+	}
+	if err := printConfig(out, image); err != nil {
 		return err
 	}
 
+	return printLayers(out, image)
+}
+
+func printManifest(out io.Writer, image *Image) error {
 	w := tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
 
-	fmt.Fprintf(w, "Name:\t%s\n", ref.String())
-	fmt.Fprintf(w, "MediaType:\t%s\n", descriptor.MediaType)
-	fmt.Fprintf(w, "Digest:\t%s\n", descriptor.Digest)
+	fmt.Fprintf(w, utils.Green("Manifest:")+"\n")
+	fmt.Fprintf(w, utils.Blue("%sName:")+"\t%s\n", pfx, image.Name)
+	fmt.Fprintf(w, utils.Blue("%sMediaType:")+"\t%s\n", pfx, image.Descriptor.MediaType)
+	fmt.Fprintf(w, utils.Blue("%sDigest:")+"\t%s\n", pfx, image.Descriptor.Digest)
+	if image.Descriptor.Platform != nil {
+		fmt.Fprintf(w, utils.Blue("%sPlatform:")+"\t%s\n", pfx, getPlatform(image.Descriptor.Platform))
+	}
+	if len(image.Manifest.Annotations) > 0 {
+		printAnnotations(w, image.Manifest.Annotations)
+	} else if len(image.Descriptor.Annotations) > 0 {
+		printAnnotations(w, image.Descriptor.Annotations)
+	}
+	if image.Config.Architecture != "" {
+		fmt.Fprintf(w, utils.Blue("%sOs/Arch:")+"\t%s/%s\n", pfx, image.Config.OS, image.Config.Architecture)
+	}
+	if image.Config.Author != "" {
+		fmt.Fprintf(w, utils.Blue("%sAuthor:")+"\t%s\n", pfx, image.Config.Author)
+	}
+	if image.Config.Created != nil {
+		fmt.Fprintf(w, utils.Blue("%sCreated:")+"\t%s ago\n", pfx, units.HumanDuration(time.Since(*image.Config.Created)))
+	}
 	fmt.Fprintf(w, "\n")
-	if err := w.Flush(); err != nil {
-		return err
-	}
-
-	w = tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, "Config:\n")
-	fmt.Fprintf(w, "%sMediaType:\t%s\n", pfx, manifest.Config.MediaType)
-	fmt.Fprintf(w, "%sSize:\t%v\n", pfx, units.HumanSize(float64(manifest.Config.Size)))
-	fmt.Fprintf(w, "%sDigest:\t%s\n", pfx, manifest.Config.Digest)
-	fmt.Fprintf(w, "\n")
-	if err := w.Flush(); err != nil {
-		return err
-	}
-
-	w = tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, "Layers:\n")
-	for i, layer := range manifest.Layers {
-		if i != 0 {
-			fmt.Fprintf(w, "\n")
-		}
-		fmt.Fprintf(w, "%sMediaType:\t%s\n", pfx, layer.MediaType)
-		fmt.Fprintf(w, "%sSize:\t%v\n", pfx, units.HumanSize(float64(layer.Size)))
-		fmt.Fprintf(w, "%sDigest:\t%s\n", pfx, layer.Digest)
-	}
-
 	return w.Flush()
+}
+
+func printConfig(out io.Writer, image *Image) error {
+	w := tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
+	fmt.Fprintf(w, utils.Green("Config:")+"\n")
+	fmt.Fprintf(w, utils.Blue("%sMediaType:")+"\t%s\n", pfx, image.Manifest.Config.MediaType)
+	fmt.Fprintf(w, utils.Blue("%sSize:")+"\t%v\n", pfx, units.HumanSize(float64(image.Manifest.Config.Size)))
+	fmt.Fprintf(w, utils.Blue("%sDigest:")+"\t%s\n", pfx, image.Manifest.Config.Digest)
+	if len(image.Config.Config.Cmd) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sCommand:")+"\t%q\n", pfx, strings.TrimPrefix(strings.Join(image.Config.Config.Cmd, " "), "/bin/sh -c "))
+	}
+	if len(image.Config.Config.Entrypoint) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sEntrypoint:")+"\t%q\n", pfx, strings.Join(image.Config.Config.Entrypoint, " "))
+	}
+	if image.Config.Config.User != "" {
+		fmt.Fprintf(w, utils.Blue("%sUser:")+"\t%s\n", pfx, image.Config.Config.User)
+	}
+	if len(image.Config.Config.ExposedPorts) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sExposed ports:")+"\t%s\n", pfx, getExposedPorts(image.Config.Config.ExposedPorts))
+	}
+	if len(image.Config.Config.Env) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sEnvironment:")+"\n", pfx)
+		for _, env := range image.Config.Config.Env {
+			fmt.Fprintf(w, "%s%s%s\n", pfx, pfx, env)
+		}
+	}
+	if len(image.Config.Config.Volumes) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sVolumes:")+"\n", pfx)
+		for volume := range image.Config.Config.Volumes {
+			fmt.Fprintf(w, "%s%s%s\n", pfx, pfx, volume)
+		}
+	}
+	if image.Config.Config.WorkingDir != "" {
+		fmt.Fprintf(w, utils.Blue("%sWorking Directory:")+"\t%q\n", pfx, image.Config.Config.WorkingDir)
+	}
+	if len(image.Config.Config.Labels) > 0 {
+		fmt.Fprintf(w, utils.Blue("%sLabels:")+"\n", pfx)
+		for k, v := range image.Config.Config.Labels {
+			fmt.Fprintf(w, "%s%s%s=%q\n", pfx, pfx, k, v)
+		}
+	}
+	if image.Config.Config.StopSignal != "" {
+		fmt.Fprintf(w, utils.Blue("%sStop signal:")+"\t%s\n", pfx, image.Config.Config.StopSignal)
+	}
+
+	fmt.Fprintf(w, "\n")
+	return w.Flush()
+}
+
+func printLayers(out io.Writer, image *Image) error {
+	history := filterEmptyLayers(image.Config.History)
+	w := tabwriter.NewWriter(out, 0, 0, 1, ' ', 0)
+	fmt.Fprintln(w, utils.Green("Layers:"))
+	for i, layer := range image.Manifest.Layers {
+		if i != 0 {
+			fmt.Fprintln(w)
+		}
+		fmt.Fprintf(w, utils.Blue("%sMediaType:")+"\t%s\n", pfx, layer.MediaType)
+		fmt.Fprintf(w, utils.Blue("%sSize:")+"\t%v\n", pfx, units.HumanSize(float64(layer.Size)))
+		fmt.Fprintf(w, utils.Blue("%sDigest:")+"\t%s\n", pfx, layer.Digest)
+		if len(image.Manifest.Layers) == len(history) {
+			fmt.Fprintf(w, utils.Blue("%sCommand:")+"\t%s\n", pfx, cleanCreatedBy(history[i].CreatedBy))
+			if history[i].Created != nil {
+				fmt.Fprintf(w, utils.Blue("%sCreated:")+"\t%s ago\n", pfx, units.HumanDuration(time.Since(*history[i].Created)))
+			}
+		}
+	}
+	return w.Flush()
+}
+
+func getPlatform(platform *ocispec.Platform) string {
+	result := fmt.Sprintf("%s/%s", platform.OS, platform.Architecture)
+	if platform.Variant != "" {
+		result += "/" + platform.Variant
+	}
+	if platform.OSVersion != "" {
+		result += "/" + platform.OSVersion
+	}
+	if len(platform.OSFeatures) > 0 {
+		result += "/" + strings.Join(platform.OSFeatures, "/")
+	}
+	return result
+}
+
+func cleanCreatedBy(history string) string {
+	history = strings.TrimPrefix(history, "/bin/sh -c #(nop) ")
+	history = strings.TrimPrefix(history, "/bin/sh -c ")
+	return strings.TrimSpace(history)
+}
+
+func filterEmptyLayers(history []ocispec.History) []ocispec.History {
+	var result []ocispec.History
+	for _, h := range history {
+		if !h.EmptyLayer {
+			result = append(result, h)
+		}
+	}
+	return result
+}
+
+func getExposedPorts(configPorts map[string]struct{}) string {
+	var ports []string
+	for port := range configPorts {
+		ports = append(ports, port)
+	}
+	return strings.Join(ports, " ")
+}
+
+func printAnnotations(w io.Writer, annotations map[string]string) {
+	fmt.Fprintf(w, utils.Blue("%sAnnotations:")+"\n", pfx)
+	for k, v := range annotations {
+		fmt.Fprintf(w, "%s%s%s:\t%s\n", pfx, pfx, k, v)
+	}
 }
 
 type authResolver struct {
