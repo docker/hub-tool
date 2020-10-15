@@ -20,14 +20,15 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
+	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-tool/internal/color"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -102,12 +103,12 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, a
 
 func printRepositories(out io.Writer, values interface{}) error {
 	repositories := values.([]hub.Repository)
-	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
+	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
 
 	for _, repository := range repositories {
 		var values []string
