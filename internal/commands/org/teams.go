@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
+	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-tool/internal/color"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -80,12 +81,12 @@ func runTeams(streams command.Streams, hubClient *hub.Client, opts teamsOptions,
 
 func printTeams(out io.Writer, values interface{}) error {
 	teams := values.([]hub.Team)
-	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
+	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range teamsColumns {
 		headers = append(headers, column.header)
 	}
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
 
 	for _, team := range teams {
 		var values []string
