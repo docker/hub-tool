@@ -23,12 +23,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli/command"
 	cliflags "github.com/docker/cli/cli/flags"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 
+	"github.com/docker/hub-tool/internal/color"
 	"github.com/docker/hub-tool/internal/commands"
 	"github.com/docker/hub-tool/internal/hub"
 )
@@ -54,7 +54,7 @@ func main() {
 	hubClient, err := hub.NewClient(authResolver, hub.WithContext(ctx))
 	if err != nil {
 		if hub.IsAuthenticationError(err) {
-			fmt.Println(utils.Red(`You need to be logged in to Docker Hub to use this tool.
+			fmt.Println(color.Error(`You need to be logged in to Docker Hub to use this tool.
 Please login to Docker Hub using the "docker login" command.`))
 			os.Exit(1)
 		}

@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 	"time"
 
-	"github.com/cli/cli/utils"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
+	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-tool/internal/color"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -169,12 +169,12 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 
 func printTags(out io.Writer, values interface{}) error {
 	tags := values.([]hub.Tag)
-	w := tabwriter.NewWriter(out, 20, 1, 3, ' ', 0)
+	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
 	for _, tag := range tags {
 		var values []string
 		for _, column := range defaultColumns {
@@ -235,6 +235,6 @@ func promptCallToAction(out io.Writer, client accountInfo) error {
 		return nil
 	}
 
-	_, err = fmt.Fprint(out, utils.Blue(callToAction))
+	_, err = fmt.Fprint(out, color.Info(callToAction))
 	return err
 }
