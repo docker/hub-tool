@@ -60,36 +60,36 @@ type Image struct {
 }
 
 //GetTags calls the hub repo API and returns all the information on all tags
-func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, error) {
+func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, int, error) {
 	repoPath, err := getRepoPath(repository)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	u, err := url.Parse(c.domain + fmt.Sprintf(TagsURL, repoPath))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	q := url.Values{}
 	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tags, next, err := c.getTagsPage(u.String(), repository, reqOps...)
+	tags, total, next, err := c.getTagsPage(u.String(), repository, reqOps...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if c.fetchAllElements {
 		for next != "" {
-			pageTags, n, err := c.getTagsPage(next, repository, reqOps...)
+			pageTags, _, n, err := c.getTagsPage(next, repository, reqOps...)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			next = n
 			tags = append(tags, pageTags...)
 		}
 	}
 
-	return tags, nil
+	return tags, total, nil
 }
 
 //RemoveTag removes a tag in a repository on Hub
@@ -102,18 +102,18 @@ func (c *Client) RemoveTag(repository, tag string) error {
 	return err
 }
 
-func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag, string, error) {
+func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag, int, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	response, err := c.doRequest(req, append(reqOps, WithHubToken(c.token))...)
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var hubResponse hubTagResponse
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var tags []Tag
 	for _, result := range hubResponse.Results {
@@ -130,7 +130,7 @@ func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag
 		}
 		tags = append(tags, tag)
 	}
-	return tags, hubResponse.Next, nil
+	return tags, hubResponse.Count, hubResponse.Next, nil
 }
 
 type hubTagResponse struct {
