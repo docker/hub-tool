@@ -155,7 +155,7 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 	if ordering != "" {
 		reqOps = append(reqOps, hub.WithSortingOrder(ordering))
 	}
-	tags, err := hubClient.GetTags(repository, reqOps...)
+	tags, total, err := hubClient.GetTags(repository, reqOps...)
 	if err != nil {
 		return err
 	}
@@ -164,25 +164,32 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 		defaultColumns = append(defaultColumns, platformColumn)
 	}
 
-	return opts.Print(streams.Out(), tags, printTags)
+	return opts.Print(streams.Out(), &helper{tags, total}, printTags)
 }
 
 func printTags(out io.Writer, values interface{}) error {
-	tags := values.([]hub.Tag)
+	h := values.(*helper)
 	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
 	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
-	for _, tag := range tags {
+	for _, tag := range h.tags {
 		var values []string
 		for _, column := range defaultColumns {
 			values = append(values, column.value(tag))
 		}
 		fmt.Fprintln(w, strings.Join(values, "\t"))
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	if len(h.tags) < h.total {
+		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tags), h.total)))
+	}
+	return nil
 }
 
 const (
@@ -237,4 +244,9 @@ func promptCallToAction(out io.Writer, client accountInfo) error {
 
 	_, err = fmt.Fprint(out, color.Info(callToAction))
 	return err
+}
+
+type helper struct {
+	tags  []hub.Tag
+	total int
 }
