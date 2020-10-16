@@ -42,10 +42,10 @@ type Repository struct {
 }
 
 //GetRepositories lists all the repositories a user can access
-func (c *Client) GetRepositories(account string) ([]Repository, error) {
+func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(RepositoriesURL, account))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	q := url.Values{}
 	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
@@ -53,23 +53,23 @@ func (c *Client) GetRepositories(account string) ([]Repository, error) {
 	q.Add("ordering", "last_updated")
 	u.RawQuery = q.Encode()
 
-	repos, next, err := c.getRepositoriesPage(u.String(), account)
+	repos, total, next, err := c.getRepositoriesPage(u.String(), account)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if c.fetchAllElements {
 		for next != "" {
-			pageRepos, n, err := c.getRepositoriesPage(next, account)
+			pageRepos, _, n, err := c.getRepositoriesPage(next, account)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			next = n
 			repos = append(repos, pageRepos...)
 		}
 	}
 
-	return repos, nil
+	return repos, total, nil
 }
 
 //RemoveRepository removes a repository on Hub
@@ -82,18 +82,18 @@ func (c *Client) RemoveRepository(repository string) error {
 	return err
 }
 
-func (c *Client) getRepositoriesPage(url, account string) ([]Repository, string, error) {
+func (c *Client) getRepositoriesPage(url, account string) ([]Repository, int, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var hubResponse hubRepositoryResponse
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var repos []Repository
 	for _, result := range hubResponse.Results {
@@ -107,7 +107,7 @@ func (c *Client) getRepositoriesPage(url, account string) ([]Repository, string,
 		}
 		repos = append(repos, repo)
 	}
-	return repos, hubResponse.Next, nil
+	return repos, hubResponse.Count, hubResponse.Next, nil
 }
 
 type hubRepositoryResponse struct {

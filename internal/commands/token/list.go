@@ -92,27 +92,39 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) e
 			return err
 		}
 	}
-	tokens, err := hubClient.GetTokens()
+	tokens, total, err := hubClient.GetTokens()
 	if err != nil {
 		return err
 	}
-	return opts.Print(streams.Out(), tokens, printTokens)
+	return opts.Print(streams.Out(), &helper{tokens, total}, printTokens)
 }
 
 func printTokens(out io.Writer, values interface{}) error {
-	tokens := values.([]hub.Token)
+	h := values.(*helper)
 	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
 	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
-	for _, token := range tokens {
+	for _, token := range h.tokens {
 		var values []string
 		for _, column := range defaultColumns {
 			values = append(values, column.value(token))
 		}
 		fmt.Fprintln(w, strings.Join(values, "\t"))
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	if len(h.tokens) < h.total {
+		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tokens), h.total)))
+	}
+	return nil
+}
+
+type helper struct {
+	tokens []hub.Token
+	total  int
 }

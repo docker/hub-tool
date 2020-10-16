@@ -75,32 +75,32 @@ func (c *Client) CreateToken(description string) (*Token, error) {
 }
 
 //GetTokens calls the hub repo API and returns all the information on all tokens
-func (c *Client) GetTokens() ([]Token, error) {
+func (c *Client) GetTokens() ([]Token, int, error) {
 	u, err := url.Parse(c.domain + TokensURL)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	q := url.Values{}
 	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	tokens, next, err := c.getTokensPage(u.String())
+	tokens, total, next, err := c.getTokensPage(u.String())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if c.fetchAllElements {
 		for next != "" {
-			pageTokens, n, err := c.getTokensPage(next)
+			pageTokens, _, n, err := c.getTokensPage(next)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			next = n
 			tokens = append(tokens, pageTokens...)
 		}
 	}
 
-	return tokens, nil
+	return tokens, total, nil
 }
 
 //GetToken calls the hub repo API and returns the information on one token
@@ -161,28 +161,28 @@ func (c *Client) RevokeToken(tokenUUID string) error {
 	return err
 }
 
-func (c *Client) getTokensPage(url string) ([]Token, string, error) {
+func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var hubResponse hubTokenResponse
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
-		return nil, "", err
+		return nil, 0, "", err
 	}
 	var tokens []Token
 	for _, result := range hubResponse.Results {
 		token, err := convertToken(result)
 		if err != nil {
-			return nil, "", err
+			return nil, 0, "", err
 		}
 		tokens = append(tokens, token)
 	}
-	return tokens, hubResponse.Next, nil
+	return tokens, hubResponse.Count, hubResponse.Next, nil
 }
 
 type hubTokenRequest struct {

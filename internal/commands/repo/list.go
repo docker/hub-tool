@@ -93,16 +93,16 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, a
 	if len(args) > 0 {
 		account = args[0]
 	}
-	repositories, err := hubClient.GetRepositories(account)
+	repositories, total, err := hubClient.GetRepositories(account)
 	if err != nil {
 		return err
 	}
 
-	return opts.Print(streams.Out(), repositories, printRepositories)
+	return opts.Print(streams.Out(), &helper{repositories, total}, printRepositories)
 }
 
 func printRepositories(out io.Writer, values interface{}) error {
-	repositories := values.([]hub.Repository)
+	h := values.(*helper)
 	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {
@@ -110,12 +110,24 @@ func printRepositories(out io.Writer, values interface{}) error {
 	}
 	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
 
-	for _, repository := range repositories {
+	for _, repository := range h.repositories {
 		var values []string
 		for _, column := range defaultColumns {
 			values = append(values, column.value(repository))
 		}
 		fmt.Fprintln(w, strings.Join(values, "\t"))
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	if len(h.repositories) < h.total {
+		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.repositories), h.total)))
+	}
+	return nil
+}
+
+type helper struct {
+	repositories []hub.Repository
+	total        int
 }
