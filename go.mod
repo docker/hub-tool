@@ -18,6 +18,7 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a
