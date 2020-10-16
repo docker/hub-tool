@@ -80,7 +80,7 @@ func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, error) 
 	}
 	if c.fetchAllElements {
 		for next != "" {
-			pageTags, n, err := c.getTagsPage(next, repository)
+			pageTags, n, err := c.getTagsPage(next, repository, reqOps...)
 			if err != nil {
 				return nil, err
 			}
