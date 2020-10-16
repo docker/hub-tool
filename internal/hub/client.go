@@ -159,6 +159,7 @@ func (c *Client) login(hubBaseURL string, hubAuthConfig types.AuthConfig) (strin
 
 func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
 	req.Header["Accept"] = []string{"application/json"}
+	req.Header["Content-Type"] = []string{"application/json"}
 	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
 	for _, op := range reqOps {
 		if err := op(req); err != nil {
