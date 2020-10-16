@@ -87,9 +87,6 @@ func printInspectToken(out io.Writer, value interface{}) error {
 		fmt.Fprintf(w, color.Key("%sDescription:")+"\t%s\n", prefix, token.Description)
 	}
 	fmt.Fprintf(w, color.Key("%sIs Active:")+"\t%v\n", prefix, token.IsActive)
-	if len(token.Scopes) > 0 {
-		fmt.Fprintf(w, color.Key("%sScopes:")+"\t%s\n", prefix, strings.Join(token.Scopes, ", "))
-	}
 	fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s\n", prefix, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
 	fmt.Fprintf(w, color.Key("%sLast Used:")+"\t%s\n", prefix, getLastUsed(token.LastUsed))
 	fmt.Fprintf(w, color.Key("%sCreator User Agent:")+"\t%s\n", prefix, token.CreatorUA)
