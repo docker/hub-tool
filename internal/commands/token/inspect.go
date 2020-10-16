@@ -74,7 +74,7 @@ func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOpti
 }
 
 const (
-	pfx = "  "
+	prefix = "  "
 )
 
 func printInspectToken(out io.Writer, value interface{}) error {
@@ -82,19 +82,19 @@ func printInspectToken(out io.Writer, value interface{}) error {
 
 	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
 	fmt.Fprintf(w, color.Title("Token:")+"\n")
-	fmt.Fprintf(w, color.Key("%sUUID:")+"\t%s\n", pfx, token.UUID)
+	fmt.Fprintf(w, color.Key("%sUUID:")+"\t%s\n", prefix, token.UUID)
 	if token.Description != "" {
-		fmt.Fprintf(w, color.Key("%sDescription:")+"\t%s\n", pfx, token.Description)
+		fmt.Fprintf(w, color.Key("%sDescription:")+"\t%s\n", prefix, token.Description)
 	}
-	fmt.Fprintf(w, color.Key("%sIs Active:")+"\t%v\n", pfx, token.IsActive)
+	fmt.Fprintf(w, color.Key("%sIs Active:")+"\t%v\n", prefix, token.IsActive)
 	if len(token.Scopes) > 0 {
-		fmt.Fprintf(w, color.Key("%sScopes:")+"\t%s\n", pfx, strings.Join(token.Scopes, ", "))
+		fmt.Fprintf(w, color.Key("%sScopes:")+"\t%s\n", prefix, strings.Join(token.Scopes, ", "))
 	}
-	fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s\n", pfx, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
-	fmt.Fprintf(w, color.Key("%sLast Used:")+"\t%s\n", pfx, getLastUsed(token.LastUsed))
-	fmt.Fprintf(w, color.Key("%sCreator User Agent:")+"\t%s\n", pfx, token.CreatorUA)
-	fmt.Fprintf(w, color.Key("%sCreator IP:")+"\t%s\n", pfx, token.CreatorIP)
-	fmt.Fprintf(w, color.Key("%sGenerated:")+"\t%s\n", pfx, getGeneratedBy(token))
+	fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s\n", prefix, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
+	fmt.Fprintf(w, color.Key("%sLast Used:")+"\t%s\n", prefix, getLastUsed(token.LastUsed))
+	fmt.Fprintf(w, color.Key("%sCreator User Agent:")+"\t%s\n", prefix, token.CreatorUA)
+	fmt.Fprintf(w, color.Key("%sCreator IP:")+"\t%s\n", prefix, token.CreatorIP)
+	fmt.Fprintf(w, color.Key("%sGenerated:")+"\t%s\n", prefix, getGeneratedBy(token))
 	return w.Flush()
 }
 

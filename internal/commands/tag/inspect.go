@@ -109,7 +109,7 @@ func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOpti
 }
 
 const (
-	pfx = "  "
+	prefix = "  "
 )
 
 func formatManifestlist(streams command.Streams, format string, raw []byte, descriptor ocispec.Descriptor, imageRef string) error {
@@ -180,11 +180,11 @@ func printManifest(out io.Writer, image *Image) error {
 	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
 
 	fmt.Fprintf(w, color.Title("Manifest:")+"\n")
-	fmt.Fprintf(w, color.Key("%sName:")+"\t%s\n", pfx, image.Name)
-	fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", pfx, image.Descriptor.MediaType)
-	fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", pfx, image.Descriptor.Digest)
+	fmt.Fprintf(w, color.Key("%sName:")+"\t%s\n", prefix, image.Name)
+	fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", prefix, image.Descriptor.MediaType)
+	fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", prefix, image.Descriptor.Digest)
 	if image.Descriptor.Platform != nil {
-		fmt.Fprintf(w, color.Key("%sPlatform:")+"\t%s\n", pfx, getPlatform(image.Descriptor.Platform))
+		fmt.Fprintf(w, color.Key("%sPlatform:")+"\t%s\n", prefix, getPlatform(image.Descriptor.Platform))
 	}
 	if len(image.Manifest.Annotations) > 0 {
 		printAnnotations(w, image.Manifest.Annotations)
@@ -192,13 +192,13 @@ func printManifest(out io.Writer, image *Image) error {
 		printAnnotations(w, image.Descriptor.Annotations)
 	}
 	if image.Config.Architecture != "" {
-		fmt.Fprintf(w, color.Key("%sOs/Arch:")+"\t%s/%s\n", pfx, image.Config.OS, image.Config.Architecture)
+		fmt.Fprintf(w, color.Key("%sOs/Arch:")+"\t%s/%s\n", prefix, image.Config.OS, image.Config.Architecture)
 	}
 	if image.Config.Author != "" {
-		fmt.Fprintf(w, color.Key("%sAuthor:")+"\t%s\n", pfx, image.Config.Author)
+		fmt.Fprintf(w, color.Key("%sAuthor:")+"\t%s\n", prefix, image.Config.Author)
 	}
 	if image.Config.Created != nil {
-		fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s ago\n", pfx, units.HumanDuration(time.Since(*image.Config.Created)))
+		fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s ago\n", prefix, units.HumanDuration(time.Since(*image.Config.Created)))
 	}
 	fmt.Fprintf(w, "\n")
 	return w.Flush()
@@ -207,44 +207,44 @@ func printManifest(out io.Writer, image *Image) error {
 func printConfig(out io.Writer, image *Image) error {
 	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
 	fmt.Fprintf(w, color.Title("Config:")+"\n")
-	fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", pfx, image.Manifest.Config.MediaType)
-	fmt.Fprintf(w, color.Key("%sSize:")+"\t%v\n", pfx, units.HumanSize(float64(image.Manifest.Config.Size)))
-	fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", pfx, image.Manifest.Config.Digest)
+	fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", prefix, image.Manifest.Config.MediaType)
+	fmt.Fprintf(w, color.Key("%sSize:")+"\t%v\n", prefix, units.HumanSize(float64(image.Manifest.Config.Size)))
+	fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", prefix, image.Manifest.Config.Digest)
 	if len(image.Config.Config.Cmd) > 0 {
-		fmt.Fprintf(w, color.Key("%sCommand:")+"\t%q\n", pfx, strings.TrimPrefix(strings.Join(image.Config.Config.Cmd, " "), "/bin/sh -c "))
+		fmt.Fprintf(w, color.Key("%sCommand:")+"\t%q\n", prefix, strings.TrimPrefix(strings.Join(image.Config.Config.Cmd, " "), "/bin/sh -c "))
 	}
 	if len(image.Config.Config.Entrypoint) > 0 {
-		fmt.Fprintf(w, color.Key("%sEntrypoint:")+"\t%q\n", pfx, strings.Join(image.Config.Config.Entrypoint, " "))
+		fmt.Fprintf(w, color.Key("%sEntrypoint:")+"\t%q\n", prefix, strings.Join(image.Config.Config.Entrypoint, " "))
 	}
 	if image.Config.Config.User != "" {
-		fmt.Fprintf(w, color.Key("%sUser:")+"\t%s\n", pfx, image.Config.Config.User)
+		fmt.Fprintf(w, color.Key("%sUser:")+"\t%s\n", prefix, image.Config.Config.User)
 	}
 	if len(image.Config.Config.ExposedPorts) > 0 {
-		fmt.Fprintf(w, color.Key("%sExposed ports:")+"\t%s\n", pfx, getExposedPorts(image.Config.Config.ExposedPorts))
+		fmt.Fprintf(w, color.Key("%sExposed ports:")+"\t%s\n", prefix, getExposedPorts(image.Config.Config.ExposedPorts))
 	}
 	if len(image.Config.Config.Env) > 0 {
-		fmt.Fprintf(w, color.Key("%sEnvironment:")+"\n", pfx)
+		fmt.Fprintf(w, color.Key("%sEnvironment:")+"\n", prefix)
 		for _, env := range image.Config.Config.Env {
-			fmt.Fprintf(w, "%s%s%s\n", pfx, pfx, env)
+			fmt.Fprintf(w, "%s%s%s\n", prefix, prefix, env)
 		}
 	}
 	if len(image.Config.Config.Volumes) > 0 {
-		fmt.Fprintf(w, color.Key("%sVolumes:")+"\n", pfx)
+		fmt.Fprintf(w, color.Key("%sVolumes:")+"\n", prefix)
 		for volume := range image.Config.Config.Volumes {
-			fmt.Fprintf(w, "%s%s%s\n", pfx, pfx, volume)
+			fmt.Fprintf(w, "%s%s%s\n", prefix, prefix, volume)
 		}
 	}
 	if image.Config.Config.WorkingDir != "" {
-		fmt.Fprintf(w, color.Key("%sWorking Directory:")+"\t%q\n", pfx, image.Config.Config.WorkingDir)
+		fmt.Fprintf(w, color.Key("%sWorking Directory:")+"\t%q\n", prefix, image.Config.Config.WorkingDir)
 	}
 	if len(image.Config.Config.Labels) > 0 {
-		fmt.Fprintf(w, color.Key("%sLabels:")+"\n", pfx)
+		fmt.Fprintf(w, color.Key("%sLabels:")+"\n", prefix)
 		for k, v := range image.Config.Config.Labels {
-			fmt.Fprintf(w, "%s%s%s=%q\n", pfx, pfx, k, v)
+			fmt.Fprintf(w, "%s%s%s=%q\n", prefix, prefix, k, v)
 		}
 	}
 	if image.Config.Config.StopSignal != "" {
-		fmt.Fprintf(w, color.Key("%sStop signal:")+"\t%s\n", pfx, image.Config.Config.StopSignal)
+		fmt.Fprintf(w, color.Key("%sStop signal:")+"\t%s\n", prefix, image.Config.Config.StopSignal)
 	}
 
 	fmt.Fprintf(w, "\n")
@@ -259,13 +259,13 @@ func printLayers(out io.Writer, image *Image) error {
 		if i != 0 {
 			fmt.Fprintln(w)
 		}
-		fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", pfx, layer.MediaType)
-		fmt.Fprintf(w, color.Key("%sSize:")+"\t%v\n", pfx, units.HumanSize(float64(layer.Size)))
-		fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", pfx, layer.Digest)
+		fmt.Fprintf(w, color.Key("%sMediaType:")+"\t%s\n", prefix, layer.MediaType)
+		fmt.Fprintf(w, color.Key("%sSize:")+"\t%v\n", prefix, units.HumanSize(float64(layer.Size)))
+		fmt.Fprintf(w, color.Key("%sDigest:")+"\t%s\n", prefix, layer.Digest)
 		if len(image.Manifest.Layers) == len(history) {
-			fmt.Fprintf(w, color.Key("%sCommand:")+"\t%s\n", pfx, cleanCreatedBy(history[i].CreatedBy))
+			fmt.Fprintf(w, color.Key("%sCommand:")+"\t%s\n", prefix, cleanCreatedBy(history[i].CreatedBy))
 			if history[i].Created != nil {
-				fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s ago\n", pfx, units.HumanDuration(time.Since(*history[i].Created)))
+				fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s ago\n", prefix, units.HumanDuration(time.Since(*history[i].Created)))
 			}
 		}
 	}
@@ -311,9 +311,9 @@ func getExposedPorts(configPorts map[string]struct{}) string {
 }
 
 func printAnnotations(w io.Writer, annotations map[string]string) {
-	fmt.Fprintf(w, color.Key("%sAnnotations:")+"\n", pfx)
+	fmt.Fprintf(w, color.Key("%sAnnotations:")+"\n", prefix)
 	for k, v := range annotations {
-		fmt.Fprintf(w, "%s%s%s:\t%s\n", pfx, pfx, k, v)
+		fmt.Fprintf(w, "%s%s%s:\t%s\n", prefix, prefix, k, v)
 	}
 }
 

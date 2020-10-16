@@ -76,7 +76,7 @@ func printCreatedToken(out io.Writer, value interface{}) error {
 		fmt.Fprintln(out, helper.token.Token)
 		return nil
 	}
-	fmt.Fprintf(out, color.Emphasise("Personal Access Token successfully created !")+`
+	fmt.Fprintf(out, color.Emphasise("Personal Access Token successfully created!")+`
 
 When logging in from your Docker CLI client, use this token as a password.
 `+color.Header("Description:")+` %s
