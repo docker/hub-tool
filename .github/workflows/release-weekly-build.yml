@@ -65,7 +65,7 @@ jobs:
       - name: Build binary and run tests
         env:
           E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
-          E2E_HUB_TOKEN_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
+          E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
         run: make TAG_NAME=${{ github.event.inputs.tag }} -f builder.Makefile build test-unit e2e
 
       - name: Upload binary artifact
