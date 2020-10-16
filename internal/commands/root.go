@@ -27,6 +27,7 @@ import (
 	"github.com/docker/hub-tool/internal/commands/org"
 	"github.com/docker/hub-tool/internal/commands/repo"
 	"github.com/docker/hub-tool/internal/commands/tag"
+	"github.com/docker/hub-tool/internal/commands/token"
 	"github.com/docker/hub-tool/internal/hub"
 )
 
@@ -53,6 +54,7 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 
 	cmd.AddCommand(
 		account.NewAccountCmd(streams, hubClient),
+		token.NewTokenCmd(streams, hubClient),
 		org.NewOrgCmd(streams, hubClient),
 		repo.NewRepoCmd(streams, hubClient),
 		tag.NewTagCmd(streams, hubClient),
