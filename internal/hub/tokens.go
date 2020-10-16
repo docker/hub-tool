@@ -198,7 +198,7 @@ func (c *Client) getTokensPage(url string) ([]Token, string, error) {
 
 type hubTokenRequest struct {
 	Description string   `json:"token_label,omitempty"`
-	IsActive    bool     `json:"is_active,omitempty"`
+	IsActive    bool     `json:"is_active"`
 	Scopes      []string `json:"scopes,omitempty"`
 }
 
