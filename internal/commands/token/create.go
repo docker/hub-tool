@@ -38,6 +38,7 @@ type createOptions struct {
 	format.Option
 	description string
 	quiet       bool
+	scopes      []string
 }
 
 func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
@@ -56,12 +57,13 @@ func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().StringVar(&opts.description, "description", "", "Set token's description")
 	cmd.Flags().BoolVar(&opts.quiet, "quiet", false, "Display only created token")
+	cmd.Flags().StringArrayVar(&opts.scopes, "scope", nil, "Add a specific token scope (repo:public_read)")
 	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
 func runCreate(streams command.Streams, hubClient *hub.Client, opts createOptions) error {
-	token, err := hubClient.CreateToken(opts.description)
+	token, err := hubClient.CreateToken(opts.description, opts.scopes)
 	if err != nil {
 		return err
 	}

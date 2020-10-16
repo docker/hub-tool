@@ -55,6 +55,9 @@ var (
 			return fmt.Sprintf("%v", t.IsActive)
 		}},
 	}
+	scopeColumn = column{
+		"SCOPES", func(t hub.Token) string { return strings.Join(t.Scopes, ",") },
+	}
 )
 
 type column struct {
@@ -101,6 +104,12 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) e
 
 func printTokens(out io.Writer, values interface{}) error {
 	tokens := values.([]hub.Token)
+	for _, t := range tokens {
+		if len(t.Scopes) > 0 {
+			defaultColumns = append(defaultColumns, scopeColumn)
+			break
+		}
+	}
 	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
 	var headers []string
 	for _, column := range defaultColumns {

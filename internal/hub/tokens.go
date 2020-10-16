@@ -34,6 +34,13 @@ const (
 	TokenURL = "/v2/api_tokens/%s"
 )
 
+var (
+	validScopes = map[string]struct{}{
+		// Allow only public pulls
+		"repo:public_read": {},
+	}
+)
+
 //Token is a personal access token. The token field will only be filled at creation and can never been accessed again.
 type Token struct {
 	UUID        uuid.UUID
@@ -46,11 +53,15 @@ type Token struct {
 	IsActive    bool
 	Token       string
 	Description string
+	Scopes      []string
 }
 
 // CreateToken creates a Personal Access Token and returns the token field only once
-func (c *Client) CreateToken(description string) (*Token, error) {
-	data, err := json.Marshal(hubTokenRequest{Description: description})
+func (c *Client) CreateToken(description string, scopes []string) (*Token, error) {
+	if err := validateScopes(scopes); err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(hubTokenRequest{Description: description, Scopes: scopes})
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +197,9 @@ func (c *Client) getTokensPage(url string) ([]Token, string, error) {
 }
 
 type hubTokenRequest struct {
-	Description string `json:"token_label,omitempty"`
-	IsActive    bool   `json:"is_active,omitempty"`
+	Description string   `json:"token_label,omitempty"`
+	IsActive    bool     `json:"is_active,omitempty"`
+	Scopes      []string `json:"scopes,omitempty"`
 }
 
 type hubTokenResponse struct {
@@ -208,6 +220,7 @@ type hubTokenResult struct {
 	IsActive    bool      `json:"is_active"`
 	Token       string    `json:"token"`
 	TokenLabel  string    `json:"token_label"`
+	Scopes      []string  `json:"scopes,omitempty"`
 }
 
 func convertToken(response hubTokenResult) (Token, error) {
@@ -226,5 +239,15 @@ func convertToken(response hubTokenResult) (Token, error) {
 		IsActive:    response.IsActive,
 		Token:       response.Token,
 		Description: response.TokenLabel,
+		Scopes:      response.Scopes,
 	}, nil
+}
+
+func validateScopes(scopes []string) error {
+	for _, scope := range scopes {
+		if _, ok := validScopes[scope]; !ok {
+			return fmt.Errorf("invalid scope %q", scope)
+		}
+	}
+	return nil
 }
