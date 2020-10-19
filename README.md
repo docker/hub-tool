@@ -15,13 +15,16 @@ properly install. [Here is a screen recording showing all of the steps if you pr
 
 1. Attempt to run the binary `./hub-tool_darwin_amd64` and choose the "Cancel"
    button in the security prompt
-   <img alt="First Prompt" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_first_prompt.png" width="200" />
+   <br />
+   <img alt="First Prompt" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_first_prompt.png" width="400" />
 2. Open the "Security and Privacy" in System Preferences; choose the "General" tab. Allow the
    `hub-tool` security prompt at the bottom of the dialog
-   <img alt="Security and Privacy Dialog" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_security_and_privacy.png" width="200" />
+   <br />
+   <img alt="Security and Privacy Dialog" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_security_and_privacy.png" width="400" />
 3. Run the binary again `./hub-tool_darwin_amd64` and then accept the last
    prompt
-   <img alt="Last Prompt, Phew!" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_last_prompt.png" width="200"
+   <br />
+   <img alt="Last Prompt, Phew!" src="https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_last_prompt.png" width="400" />
 
 ### Windows
 TODO
