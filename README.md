@@ -11,15 +11,15 @@ support ARM right now.
 Download the binary from GitHub releases and then run `chmod +x ./hub-tool_darwin_amd64`.
 
 After this, there are a few more hoops to jump through in order for it to
-properly install. [Here is a screen recording showing all of the steps if you prefer that](https://github.com/docker/hub-tool/blob/osx-install-screencast/media/osx_install.mp4).
+properly install. [Here is a screen recording showing all of the steps if you prefer that](https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install.mp4).
 
 1. Attempt to run the binary `./hub-tool_darwin_amd64` and choose the "Cancel"
-   button in the security prompt ![First Prompt](https://github.com/docker/hub-tool/blob/osx-install-screencast/media/osx_install_first_prompt.png)
+   button in the security prompt ![First Prompt](https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_first_prompt.png)
 2. Open the "Security and Privacy" in System Preferences; choose the "General" tab. Allow the
    `hub-tool` security prompt at the bottom of the dialog ![Security and
-   Privacy](https://github.com/docker/hub-tool/blob/osx-install-screencast/media/osx_install_security_and_privacy.png)
+   Privacy](https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_security_and_privacy.png)
 3. Run the binary again `./hub-tool_darwin_amd64` and then accept the last
-   prompt ![Last Prompt, Phew!](https://github.com/docker/hub-tool/blob/osx-install-screencast/media/osx_install_last_prompt.png)
+   prompt ![Last Prompt, Phew!](https://github.com/ingshtrom/hub-tool/blob/osx-install-screencast/media/osx_install_last_prompt.png)
 
 ### Windows
 TODO
