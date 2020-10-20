@@ -17,6 +17,7 @@
 package hub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -39,7 +40,7 @@ type Organization struct {
 }
 
 //GetOrganizations lists all the organizations a user has joined
-func (c *Client) GetOrganizations() ([]Organization, error) {
+func (c *Client) GetOrganizations(ctx context.Context) ([]Organization, error) {
 	u, err := url.Parse(c.domain + OrganizationsURL)
 	if err != nil {
 		return nil, err
@@ -49,13 +50,13 @@ func (c *Client) GetOrganizations() ([]Organization, error) {
 	q.Add("page", "1")
 	u.RawQuery = q.Encode()
 
-	organizations, next, err := c.getOrganizationsPage(u.String())
+	organizations, next, err := c.getOrganizationsPage(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
 
 	for next != "" {
-		pageOrganizations, n, err := c.getOrganizationsPage(next)
+		pageOrganizations, n, err := c.getOrganizationsPage(ctx, next)
 		if err != nil {
 			return nil, err
 		}
@@ -66,11 +67,12 @@ func (c *Client) GetOrganizations() ([]Organization, error) {
 	return organizations, nil
 }
 
-func (c *Client) getOrganizationsPage(url string) ([]Organization, string, error) {
+func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organization, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, "", err
 	}
+	req = req.WithContext(ctx)
 	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, "", err

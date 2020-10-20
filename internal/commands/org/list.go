@@ -17,6 +17,7 @@
 package org
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -65,7 +66,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 			metrics.Send(parent, listName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(streams, hubClient, opts)
+			return runList(cmd.Context(), streams, hubClient, opts)
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
@@ -73,8 +74,8 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	return cmd
 }
 
-func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) error {
-	organizations, err := hubClient.GetOrganizations()
+func runList(ctx context.Context, streams command.Streams, hubClient *hub.Client, opts listOptions) error {
+	organizations, err := hubClient.GetOrganizations(ctx)
 	if err != nil {
 		return err
 	}
