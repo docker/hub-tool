@@ -63,7 +63,7 @@ Please login to Docker Hub using the "docker login" command.`))
 	}
 
 	rootCmd := commands.NewRootCmd(dockerCli, hubClient, os.Args[0])
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
 	os.Exit(0)
