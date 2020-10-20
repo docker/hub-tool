@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
+	"sync"
 )
 
 const (
@@ -77,18 +79,38 @@ func (c *Client) getTeamsPage(url, organization string) ([]Team, string, error) 
 		return nil, "", err
 	}
 	var teams []Team
+	wg := sync.WaitGroup{}
+	teamCh := make(chan Team, len(hubResponse.Results))
+	errCh := make(chan error, len(hubResponse.Results))
 	for _, result := range hubResponse.Results {
-		members, err := c.GetMembersPerTeam(organization, result.Name)
-		if err != nil {
-			return nil, "", err
-		}
-		team := Team{
-			Name:        result.Name,
-			Description: result.Description,
-			Members:     members,
-		}
-		teams = append(teams, team)
+		wg.Add(1)
+		go func(result hubGroupResult) {
+			defer wg.Done()
+			members, err := c.GetMembersPerTeam(organization, result.Name)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			team := Team{
+				Name:        result.Name,
+				Description: result.Description,
+				Members:     members,
+			}
+			teamCh <- team
+		}(result)
 	}
+	wg.Wait()
+	for i := 0; i < len(hubResponse.Results); i++ {
+		select {
+		case err := <-errCh:
+			return nil, "", err
+		case team := <-teamCh:
+			teams = append(teams, team)
+		}
+	}
+	sort.Slice(teams, func(i, j int) bool {
+		return teams[i].Name < teams[j].Name
+	})
 	return teams, hubResponse.Next, nil
 }
 

@@ -81,7 +81,7 @@ When logging in from your Docker CLI client, use this token as a password.
 `+ansi.Header("Description:")+` %s
 
 To use the access token from your Docker CLI client:
-1. Run docker login --username %s
+1. Run: docker login --username %s
 2. At the password prompt, enter the personal access token.
 
     %s

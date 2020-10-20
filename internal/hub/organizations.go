@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
+	"sync"
 	"time"
 )
 
@@ -81,25 +83,60 @@ func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organi
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
 		return nil, "", err
 	}
+
 	var organizations []Organization
+	wg := sync.WaitGroup{}
+	orgsCh := make(chan Organization, len(hubResponse.Results))
+	errCh := make(chan error, len(hubResponse.Results))
 	for _, result := range hubResponse.Results {
-		teams, err := c.GetTeams(result.OrgName)
-		if err != nil {
-			return nil, "", err
-		}
-		members, err := c.GetMembers(result.OrgName)
-		if err != nil {
-			return nil, "", err
-		}
-		organization := Organization{
-			Namespace: result.OrgName,
-			FullName:  result.FullName,
-			Role:      getRole(teams),
-			Teams:     teams,
-			Members:   members,
-		}
-		organizations = append(organizations, organization)
+		wg.Add(1)
+		go func(result hubOrganizationResult) {
+			defer wg.Done()
+			subwg := sync.WaitGroup{}
+			subwg.Add(2)
+			var (
+				teams   []Team
+				members []Member
+			)
+			go func() {
+				defer subwg.Done()
+				teams, err = c.GetTeams(result.OrgName)
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}()
+			go func() {
+				defer subwg.Done()
+				members, err = c.GetMembers(result.OrgName)
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}()
+			subwg.Wait()
+			organization := Organization{
+				Namespace: result.OrgName,
+				FullName:  result.FullName,
+				Role:      getRole(teams),
+				Teams:     teams,
+				Members:   members,
+			}
+			orgsCh <- organization
+		}(result)
 	}
+	wg.Wait()
+	for i := 0; i < len(hubResponse.Results); i++ {
+		select {
+		case err := <-errCh:
+			return nil, "", err
+		case org := <-orgsCh:
+			organizations = append(organizations, org)
+		}
+	}
+	sort.Slice(organizations, func(i, j int) bool {
+		return organizations[i].Namespace < organizations[j].Namespace
+	})
 	return organizations, hubResponse.Next, nil
 }
 
