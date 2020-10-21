@@ -20,15 +20,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -39,17 +38,25 @@ const (
 
 var (
 	defaultColumns = []column{
-		{"NAMESPACE", func(o hub.Organization) string { return o.Namespace }},
-		{"NAME", func(o hub.Organization) string { return o.FullName }},
-		{"MY ROLE", func(o hub.Organization) string { return o.Role }},
-		{"TEAMS", func(o hub.Organization) string { return fmt.Sprintf("%v", len(o.Teams)) }},
-		{"MEMBERS", func(o hub.Organization) string { return fmt.Sprintf("%v", len(o.Members)) }},
+		{"NAMESPACE", func(o hub.Organization) (string, int) {
+			return ansi.Link(fmt.Sprintf("https://hub.docker.com/orgs/%s", o.Namespace), o.Namespace), len(o.Namespace)
+		}},
+		{"NAME", func(o hub.Organization) (string, int) { return o.FullName, len(o.FullName) }},
+		{"MY ROLE", func(o hub.Organization) (string, int) { return o.Role, len(o.Role) }},
+		{"TEAMS", func(o hub.Organization) (string, int) {
+			s := fmt.Sprintf("%v", len(o.Teams))
+			return s, len(s)
+		}},
+		{"MEMBERS", func(o hub.Organization) (string, int) {
+			s := fmt.Sprintf("%v", len(o.Members))
+			return s, len(s)
+		}},
 	}
 )
 
 type column struct {
 	header string
-	value  func(o hub.Organization) string
+	value  func(o hub.Organization) (string, int)
 }
 
 type listOptions struct {
@@ -84,19 +91,22 @@ func runList(ctx context.Context, streams command.Streams, hubClient *hub.Client
 
 func printOrganizations(out io.Writer, values interface{}) error {
 	organizations := values.([]hub.Organization)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
-	for _, column := range defaultColumns {
-		headers = append(headers, column.header)
-	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
 
-	for _, organization := range organizations {
-		var values []string
-		for _, column := range defaultColumns {
-			values = append(values, column.value(organization))
-		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+	tw := tabwriter.New(out, "    ")
+
+	for _, c := range defaultColumns {
+		tw.Column(ansi.Header(c.header), len(c.header))
 	}
-	return w.Flush()
+
+	tw.Line()
+
+	for _, org := range organizations {
+		for _, column := range defaultColumns {
+			value, width := column.value(org)
+			tw.Column(value, width)
+		}
+		tw.Line()
+	}
+
+	return tw.Flush()
 }

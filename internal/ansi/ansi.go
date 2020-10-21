@@ -14,9 +14,13 @@
    limitations under the License.
 */
 
-package color
+package ansi
 
-import "github.com/cli/cli/utils"
+import (
+	"fmt"
+
+	"github.com/cli/cli/utils"
+)
 
 var (
 	// Title color should be used for any important title
@@ -34,3 +38,8 @@ var (
 	// Emphasise color should be used with important content
 	Emphasise = utils.Green
 )
+
+// Link returns an ANSI terminal hyperlink
+func Link(url string, text string) string {
+	return fmt.Sprintf("\u001B]8;;%s\u0007%s\u001B]8;;\u0007", url, text)
+}

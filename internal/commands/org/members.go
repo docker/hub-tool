@@ -17,17 +17,15 @@
 package org
 
 import (
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -38,14 +36,14 @@ const (
 
 var (
 	memberColumns = []memberColumn{
-		{"USERNAME", func(m hub.Member) string { return m.Username }},
-		{"FULL NAME", func(m hub.Member) string { return m.FullName }},
+		{"USERNAME", func(m hub.Member) (string, int) { return m.Username, len(m.Username) }},
+		{"FULL NAME", func(m hub.Member) (string, int) { return m.FullName, len(m.FullName) }},
 	}
 )
 
 type memberColumn struct {
 	header string
-	value  func(m hub.Member) string
+	value  func(m hub.Member) (string, int)
 }
 
 type memberOptions struct {
@@ -80,19 +78,20 @@ func runMembers(streams command.Streams, hubClient *hub.Client, opts memberOptio
 
 func printMembers(out io.Writer, values interface{}) error {
 	members := values.([]hub.Member)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
+	tw := tabwriter.New(out, "    ")
 	for _, column := range memberColumns {
-		headers = append(headers, column.header)
+		tw.Column(ansi.Header(column.header), len(column.header))
 	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
+
+	tw.Line()
 
 	for _, member := range members {
-		var values []string
 		for _, column := range memberColumns {
-			values = append(values, column.value(member))
+			value, width := column.value(member)
+			tw.Column(value, width)
 		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+		tw.Line()
 	}
-	return w.Flush()
+
+	return nil
 }

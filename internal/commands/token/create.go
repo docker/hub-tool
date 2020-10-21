@@ -24,7 +24,7 @@ import (
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -74,10 +74,10 @@ func printCreatedToken(out io.Writer, value interface{}) error {
 		fmt.Fprintln(out, helper.token.Token)
 		return nil
 	}
-	fmt.Fprintf(out, color.Emphasise("Personal Access Token successfully created!")+`
+	fmt.Fprintf(out, ansi.Emphasise("Personal Access Token successfully created!")+`
 
 When logging in from your Docker CLI client, use this token as a password.
-`+color.Header("Description:")+` %s
+`+ansi.Header("Description:")+` %s
 
 To use the access token from your Docker CLI client:
 1. Run docker login --username %s
@@ -85,12 +85,12 @@ To use the access token from your Docker CLI client:
 
     %s
 
-`+color.Warn(`WARNING: This access token will only be displayed once.
+`+ansi.Warn(`WARNING: This access token will only be displayed once.
 It will not be stored and cannot be retrieved. Please be sure to save it now.
 `),
 		helper.token.Description,
 		helper.userName,
-		color.Emphasise(helper.token.Token))
+		ansi.Emphasise(helper.token.Token))
 	return nil
 }
 
