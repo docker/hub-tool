@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -239,8 +240,9 @@ func printConfig(out io.Writer, image *Image) error {
 	}
 	if len(image.Config.Config.Labels) > 0 {
 		fmt.Fprintf(w, color.Key("%sLabels:")+"\n", prefix)
-		for k, v := range image.Config.Config.Labels {
-			fmt.Fprintf(w, "%s%s%s=%q\n", prefix, prefix, k, v)
+		keys := sortMapKeys(image.Config.Config.Labels)
+		for _, k := range keys {
+			fmt.Fprintf(w, "%s%s%s=%q\n", prefix, prefix, k, image.Config.Config.Labels[k])
 		}
 	}
 	if image.Config.Config.StopSignal != "" {
@@ -312,8 +314,9 @@ func getExposedPorts(configPorts map[string]struct{}) string {
 
 func printAnnotations(w io.Writer, annotations map[string]string) {
 	fmt.Fprintf(w, color.Key("%sAnnotations:")+"\n", prefix)
-	for k, v := range annotations {
-		fmt.Fprintf(w, "%s%s%s:\t%s\n", prefix, prefix, k, v)
+	keys := sortMapKeys(annotations)
+	for _, k := range keys {
+		fmt.Fprintf(w, "%s%s%s:\t%s\n", prefix, prefix, k, annotations[k])
 	}
 }
 
@@ -335,4 +338,13 @@ func convert(config types.AuthConfig) clitypes.AuthConfig {
 		IdentityToken: config.IdentityToken,
 		RegistryToken: config.RegistryToken,
 	}
+}
+
+func sortMapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
