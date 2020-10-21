@@ -19,15 +19,14 @@ package org
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -38,15 +37,18 @@ const (
 
 var (
 	teamsColumns = []teamColumn{
-		{"TEAM", func(t hub.Team) string { return t.Name }},
-		{"DESCRIPTION", func(t hub.Team) string { return t.Description }},
-		{"MEMBERS", func(t hub.Team) string { return fmt.Sprintf("%v", len(t.Members)) }},
+		{"TEAM", func(t hub.Team) (string, int) { return t.Name, len(t.Name) }},
+		{"DESCRIPTION", func(t hub.Team) (string, int) { return t.Description, len(t.Description) }},
+		{"MEMBERS", func(t hub.Team) (string, int) {
+			s := fmt.Sprintf("%v", len(t.Members))
+			return s, len(s)
+		}},
 	}
 )
 
 type teamColumn struct {
 	header string
-	value  func(t hub.Team) string
+	value  func(t hub.Team) (string, int)
 }
 
 type teamsOptions struct {
@@ -81,19 +83,20 @@ func runTeams(streams command.Streams, hubClient *hub.Client, opts teamsOptions,
 
 func printTeams(out io.Writer, values interface{}) error {
 	teams := values.([]hub.Team)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
-	for _, column := range teamsColumns {
-		headers = append(headers, column.header)
-	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
+	tw := tabwriter.New(out, "    ")
 
-	for _, team := range teams {
-		var values []string
-		for _, column := range teamsColumns {
-			values = append(values, column.value(team))
-		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+	for _, column := range teamsColumns {
+		tw.Column(ansi.Header(column.header), len(column.header))
 	}
-	return w.Flush()
+
+	tw.Line()
+	for _, team := range teams {
+		for _, column := range teamsColumns {
+			value, width := column.value(team)
+			tw.Column(value, width)
+		}
+		tw.Line()
+	}
+
+	return nil
 }

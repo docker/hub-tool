@@ -28,7 +28,7 @@ import (
 	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -106,7 +106,7 @@ func printTokens(out io.Writer, values interface{}) error {
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
+	fmt.Fprintln(w, ansi.Header(strings.Join(headers, "\t")))
 	for _, token := range h.tokens {
 		var values []string
 		for _, column := range defaultColumns {
@@ -119,7 +119,7 @@ func printTokens(out io.Writer, values interface{}) error {
 	}
 
 	if len(h.tokens) < h.total {
-		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tokens), h.total)))
+		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tokens), h.total)))
 	}
 	return nil
 }

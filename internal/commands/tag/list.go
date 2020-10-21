@@ -28,7 +28,7 @@ import (
 	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -174,7 +174,7 @@ func printTags(out io.Writer, values interface{}) error {
 	for _, column := range defaultColumns {
 		headers = append(headers, column.header)
 	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
+	fmt.Fprintln(w, ansi.Header(strings.Join(headers, "\t")))
 	for _, tag := range h.tags {
 		var values []string
 		for _, column := range defaultColumns {
@@ -187,7 +187,7 @@ func printTags(out io.Writer, values interface{}) error {
 	}
 
 	if len(h.tags) < h.total {
-		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tags), h.total)))
+		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tags), h.total)))
 	}
 	return nil
 }
@@ -242,7 +242,7 @@ func promptCallToAction(out io.Writer, client accountInfo) error {
 		return nil
 	}
 
-	_, err = fmt.Fprint(out, color.Info(callToAction))
+	_, err = fmt.Fprint(out, ansi.Info(callToAction))
 	return err
 }
 

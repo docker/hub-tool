@@ -24,10 +24,9 @@ import (
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -73,39 +72,32 @@ func runInfo(streams command.Streams, hubClient *hub.Client, opts infoOptions) e
 
 func printAccount(out io.Writer, value interface{}) error {
 	account := value.(account)
+
 	// print user info
-	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, color.Key("Username:")+"\t%s\n", account.User.UserName)
-	fmt.Fprintf(w, color.Key("Full name:")+"\t%s\n", account.User.FullName)
-	fmt.Fprintf(w, color.Key("Company:")+"\t%s\n", account.User.Company)
-	fmt.Fprintf(w, color.Key("Location:")+"\t%s\n", account.User.Location)
-	fmt.Fprintf(w, color.Key("Joined:")+"\t%s ago\n", units.HumanDuration(time.Since(account.User.Joined)))
-	fmt.Fprintf(w, color.Key("Plan:")+"\t%s\n", color.Emphasise(account.Plan.Name))
-	if err := w.Flush(); err != nil {
-		return err
-	}
+	fmt.Printf(ansi.Key("Username:")+"\t%s\n", account.User.UserName)
+	fmt.Printf(ansi.Key("Full name:")+"\t%s\n", account.User.FullName)
+	fmt.Printf(ansi.Key("Company:")+"\t%s\n", account.User.Company)
+	fmt.Printf(ansi.Key("Location:")+"\t%s\n", account.User.Location)
+	fmt.Printf(ansi.Key("Joined:")+"\t\t%s ago\n", units.HumanDuration(time.Since(account.User.Joined)))
+	fmt.Printf(ansi.Key("Plan:")+"\t\t%s\n", ansi.Emphasise(account.Plan.Name))
 
 	// print plan info
-	w = ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, color.Key("Limits:")+"\n")
-	fmt.Fprintf(w, color.Key("%sSeats:")+"\t%v\n", pfx, account.Plan.Limits.Seats)
-	fmt.Fprintf(w, color.Key("%sPrivate repositories:")+"\t%v\n", pfx, account.Plan.Limits.PrivateRepos)
-	fmt.Fprintf(w, color.Key("%sParallel builds:")+"\t%v\n", pfx, account.Plan.Limits.ParallelBuilds)
-	fmt.Fprintf(w, color.Key("%sCollaborators:")+"\t%v\n", pfx, getLimit(account.Plan.Limits.Collaborators))
-	fmt.Fprintf(w, color.Key("%sTeams:")+"\t%v\n", pfx, getLimit(account.Plan.Limits.Teams))
-	return w.Flush()
+	fmt.Printf(ansi.Key("Limits:") + "\n")
+	fmt.Printf(ansi.Key("  Seats:")+"\t\t%v\n", account.Plan.Limits.Seats)
+	fmt.Printf(ansi.Key("  Private repositories:")+"\t%v\n", account.Plan.Limits.PrivateRepos)
+	fmt.Printf(ansi.Key("  Parallel builds:")+"\t%v\n", account.Plan.Limits.ParallelBuilds)
+	fmt.Printf(ansi.Key("  Collaborators:")+"\t%v\n", getLimit(account.Plan.Limits.Collaborators))
+	fmt.Printf(ansi.Key("  Teams:")+"\t\t%v\n", getLimit(account.Plan.Limits.Teams))
+
+	return nil
 }
 
 func getLimit(number int) string {
 	if number == 9999 {
-		return color.Emphasise("unlimited")
+		return ansi.Emphasise("unlimited")
 	}
 	return fmt.Sprintf("%v", number)
 }
-
-const (
-	pfx = "  "
-)
 
 type account struct {
 	User *hub.User
