@@ -45,20 +45,11 @@ jobs:
       - name: Checkout code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Golang cache
-        uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Build Cross
-        run: make cross
+      - name: Build CLI
+        run: make build
 
       - name: Unit Tests
         run: make test-unit
 
       - name: End-to-end Tests
         run: make e2e
-
