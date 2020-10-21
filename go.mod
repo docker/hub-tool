@@ -21,9 +21,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
-	github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a
 	github.com/lib/pq v1.8.0 // indirect
-	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.3 // indirect
 	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/opencontainers/image-spec v1.0.1

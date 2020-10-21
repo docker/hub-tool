@@ -19,17 +19,16 @@ package token
 import (
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -40,26 +39,29 @@ const (
 
 var (
 	defaultColumns = []column{
-		{"DESCRIPTION", func(t hub.Token) string { return t.Description }},
-		{"UUID", func(t hub.Token) string { return t.UUID.String() }},
-		{"LAST USED", func(t hub.Token) string {
-			if t.LastUsed.IsZero() {
-				return "Never"
+		{"DESCRIPTION", func(t hub.Token) (string, int) { return t.Description, len(t.Description) }},
+		{"UUID", func(t hub.Token) (string, int) { return t.UUID.String(), len(t.UUID.String()) }},
+		{"LAST USED", func(t hub.Token) (string, int) {
+			s := "Never"
+			if !t.LastUsed.IsZero() {
+				s = fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUsed)))
 			}
-			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUsed)))
+			return s, len(s)
 		}},
-		{"CREATED", func(t hub.Token) string {
-			return units.HumanDuration(time.Since(t.CreatedAt))
+		{"CREATED", func(t hub.Token) (string, int) {
+			s := units.HumanDuration(time.Since(t.CreatedAt))
+			return s, len(s)
 		}},
-		{"ACTIVE", func(t hub.Token) string {
-			return fmt.Sprintf("%v", t.IsActive)
+		{"ACTIVE", func(t hub.Token) (string, int) {
+			s := fmt.Sprintf("%v", t.IsActive)
+			return s, len(s)
 		}},
 	}
 )
 
 type column struct {
 	header string
-	value  func(t hub.Token) string
+	value  func(t hub.Token) (string, int)
 }
 
 type listOptions struct {
@@ -101,20 +103,20 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) e
 
 func printTokens(out io.Writer, values interface{}) error {
 	h := values.(*helper)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
+	tw := tabwriter.New(out, "    ")
 	for _, column := range defaultColumns {
-		headers = append(headers, column.header)
+		tw.Column(ansi.Header(column.header), len(column.header))
 	}
-	fmt.Fprintln(w, ansi.Header(strings.Join(headers, "\t")))
+
+	tw.Line()
 	for _, token := range h.tokens {
-		var values []string
 		for _, column := range defaultColumns {
-			values = append(values, column.value(token))
+			value, width := column.value(token)
+			tw.Column(value, width)
 		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+		tw.Line()
 	}
-	if err := w.Flush(); err != nil {
+	if err := tw.Flush(); err != nil {
 		return err
 	}
 

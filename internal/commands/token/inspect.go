@@ -26,7 +26,6 @@ import (
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
 	"github.com/google/uuid"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
@@ -73,26 +72,21 @@ func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOpti
 	return opts.Print(streams.Out(), token, printInspectToken)
 }
 
-const (
-	prefix = "  "
-)
-
 func printInspectToken(out io.Writer, value interface{}) error {
 	token := value.(*hub.Token)
 
-	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, ansi.Title("Token:")+"\n")
-	fmt.Fprintf(w, ansi.Key("%sUUID:")+"\t%s\n", prefix, token.UUID)
+	fmt.Fprintf(out, ansi.Title("Token:")+"\n")
+	fmt.Fprintf(out, ansi.Key("UUID:")+"\t%s\n", token.UUID)
 	if token.Description != "" {
-		fmt.Fprintf(w, ansi.Key("%sDescription:")+"\t%s\n", prefix, token.Description)
+		fmt.Fprintf(out, ansi.Key("Description:")+"\t%s\n", token.Description)
 	}
-	fmt.Fprintf(w, ansi.Key("%sIs Active:")+"\t%v\n", prefix, token.IsActive)
-	fmt.Fprintf(w, ansi.Key("%sCreated:")+"\t%s\n", prefix, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
-	fmt.Fprintf(w, ansi.Key("%sLast Used:")+"\t%s\n", prefix, getLastUsed(token.LastUsed))
-	fmt.Fprintf(w, ansi.Key("%sCreator User Agent:")+"\t%s\n", prefix, token.CreatorUA)
-	fmt.Fprintf(w, ansi.Key("%sCreator IP:")+"\t%s\n", prefix, token.CreatorIP)
-	fmt.Fprintf(w, ansi.Key("%sGenerated:")+"\t%s\n", prefix, getGeneratedBy(token))
-	return w.Flush()
+	fmt.Fprintf(out, ansi.Key("Is Active:")+"\t%v\n", token.IsActive)
+	fmt.Fprintf(out, ansi.Key("Created:")+"\t%s\n", fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
+	fmt.Fprintf(out, ansi.Key("Last Used:")+"\t%s\n", getLastUsed(token.LastUsed))
+	fmt.Fprintf(out, ansi.Key("Creator User Agent:")+"\t%s\n", token.CreatorUA)
+	fmt.Fprintf(out, ansi.Key("Creator IP:")+"\t%s\n", token.CreatorIP)
+	fmt.Fprintf(out, ansi.Key("Generated:")+"\t%s\n", getGeneratedBy(token))
+	return nil
 }
 
 func getLastUsed(t time.Time) string {
