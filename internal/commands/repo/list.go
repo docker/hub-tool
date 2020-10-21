@@ -19,17 +19,16 @@ package repo
 import (
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -40,23 +39,35 @@ const (
 
 var (
 	defaultColumns = []column{
-		{"REPOSITORY", func(r hub.Repository) string { return r.Name }},
-		{"DESCRIPTION", func(r hub.Repository) string { return r.Description }},
-		{"LAST UPDATE", func(r hub.Repository) string {
-			if r.LastUpdated.Nanosecond() == 0 {
-				return ""
-			}
-			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(r.LastUpdated)))
+		{"REPOSITORY", func(r hub.Repository) (string, int) {
+			return ansi.Link(fmt.Sprintf("https://hub.docker.com/repository/docker/%s", r.Name), r.Name), len(r.Name)
 		}},
-		{"PULLS", func(r hub.Repository) string { return fmt.Sprintf("%v", r.PullCount) }},
-		{"STARS", func(r hub.Repository) string { return fmt.Sprintf("%v", r.StarCount) }},
-		{"PRIVATE", func(r hub.Repository) string { return fmt.Sprintf("%v", r.IsPrivate) }},
+		{"DESCRIPTION", func(r hub.Repository) (string, int) { return r.Description, len(r.Description) }},
+		{"LAST UPDATE", func(r hub.Repository) (string, int) {
+			if r.LastUpdated.Nanosecond() == 0 {
+				return "", 0
+			}
+			s := fmt.Sprintf("%s ago", units.HumanDuration(time.Since(r.LastUpdated)))
+			return s, len(s)
+		}},
+		{"PULLS", func(r hub.Repository) (string, int) {
+			s := fmt.Sprintf("%d", r.PullCount)
+			return s, len(s)
+		}},
+		{"STARS", func(r hub.Repository) (string, int) {
+			s := fmt.Sprintf("%d", r.StarCount)
+			return s, len(s)
+		}},
+		{"PRIVATE", func(r hub.Repository) (string, int) {
+			s := fmt.Sprintf("%v", r.IsPrivate)
+			return s, len(s)
+		}},
 	}
 )
 
 type column struct {
 	header string
-	value  func(t hub.Repository) string
+	value  func(t hub.Repository) (string, int)
 }
 
 type listOptions struct {
@@ -103,26 +114,27 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, a
 
 func printRepositories(out io.Writer, values interface{}) error {
 	h := values.(*helper)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
+	tw := tabwriter.New(out, "    ")
+
 	for _, column := range defaultColumns {
-		headers = append(headers, column.header)
+		tw.Column(ansi.Header(column.header), len(column.header))
 	}
-	fmt.Fprintln(w, color.Header(strings.Join(headers, "\t")))
+
+	tw.Line()
 
 	for _, repository := range h.repositories {
-		var values []string
 		for _, column := range defaultColumns {
-			values = append(values, column.value(repository))
+			value, width := column.value(repository)
+			tw.Column(value, width)
 		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+		tw.Line()
 	}
-	if err := w.Flush(); err != nil {
+	if err := tw.Flush(); err != nil {
 		return err
 	}
 
 	if len(h.repositories) < h.total {
-		fmt.Fprintln(out, color.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.repositories), h.total)))
+		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.repositories), h.total)))
 	}
 	return nil
 }

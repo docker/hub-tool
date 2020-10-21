@@ -29,7 +29,7 @@ import (
 	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -81,17 +81,17 @@ func printInspectToken(out io.Writer, value interface{}) error {
 	token := value.(*hub.Token)
 
 	w := ansiterm.NewTabWriter(out, 0, 0, 1, ' ', 0)
-	fmt.Fprintf(w, color.Title("Token:")+"\n")
-	fmt.Fprintf(w, color.Key("%sUUID:")+"\t%s\n", prefix, token.UUID)
+	fmt.Fprintf(w, ansi.Title("Token:")+"\n")
+	fmt.Fprintf(w, ansi.Key("%sUUID:")+"\t%s\n", prefix, token.UUID)
 	if token.Description != "" {
-		fmt.Fprintf(w, color.Key("%sDescription:")+"\t%s\n", prefix, token.Description)
+		fmt.Fprintf(w, ansi.Key("%sDescription:")+"\t%s\n", prefix, token.Description)
 	}
-	fmt.Fprintf(w, color.Key("%sIs Active:")+"\t%v\n", prefix, token.IsActive)
-	fmt.Fprintf(w, color.Key("%sCreated:")+"\t%s\n", prefix, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
-	fmt.Fprintf(w, color.Key("%sLast Used:")+"\t%s\n", prefix, getLastUsed(token.LastUsed))
-	fmt.Fprintf(w, color.Key("%sCreator User Agent:")+"\t%s\n", prefix, token.CreatorUA)
-	fmt.Fprintf(w, color.Key("%sCreator IP:")+"\t%s\n", prefix, token.CreatorIP)
-	fmt.Fprintf(w, color.Key("%sGenerated:")+"\t%s\n", prefix, getGeneratedBy(token))
+	fmt.Fprintf(w, ansi.Key("%sIs Active:")+"\t%v\n", prefix, token.IsActive)
+	fmt.Fprintf(w, ansi.Key("%sCreated:")+"\t%s\n", prefix, fmt.Sprintf("%s ago", units.HumanDuration(time.Since(token.CreatedAt))))
+	fmt.Fprintf(w, ansi.Key("%sLast Used:")+"\t%s\n", prefix, getLastUsed(token.LastUsed))
+	fmt.Fprintf(w, ansi.Key("%sCreator User Agent:")+"\t%s\n", prefix, token.CreatorUA)
+	fmt.Fprintf(w, ansi.Key("%sCreator IP:")+"\t%s\n", prefix, token.CreatorIP)
+	fmt.Fprintf(w, ansi.Key("%sGenerated:")+"\t%s\n", prefix, getGeneratedBy(token))
 	return w.Flush()
 }
 

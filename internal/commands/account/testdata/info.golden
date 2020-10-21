@@ -1,12 +1,12 @@
-Username:  my-user-name
-Full name: My Full Name
-Company:   My Company
-Location:  MyLocation
-Joined:    Less than a second ago
-Plan:      free
+Username:	my-user-name
+Full name:	My Full Name
+Company:	My Company
+Location:	MyLocation
+Joined:		Less than a second ago
+Plan:		free
 Limits:
-  Seats:                1
-  Private repositories: 2
-  Parallel builds:      3
-  Collaborators:        unlimited
-  Teams:                unlimited
+  Seats:		1
+  Private repositories:	2
+  Parallel builds:	3
+  Collaborators:	unlimited
+  Teams:		unlimited

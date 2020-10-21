@@ -24,7 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -78,6 +78,6 @@ func runUpdate(streams command.Streams, hubClient *hub.Client, cmd *cobra.Comman
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(streams.Out(), color.Emphasise("Updated"), u.String())
+	fmt.Fprintln(streams.Out(), ansi.Emphasise("Updated"), u.String())
 	return nil
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -64,7 +64,7 @@ func runRevoke(streams command.Streams, hubClient *hub.Client, opts revokeOption
 	}
 
 	if !opts.force {
-		fmt.Fprintf(streams.Out(), color.Warn("WARNING: This action is irreversible.")+`
+		fmt.Fprintf(streams.Out(), ansi.Warn("WARNING: This action is irreversible.")+`
 By confirming, you will permanently delete the access token.
 Revoking a token will invalidate your credentials on all Docker clients currently authenticated with this token.
 
@@ -80,6 +80,6 @@ Please type your username %q to confirm deletion: `, hubClient.AuthConfig.Userna
 	if err := hubClient.RevokeToken(u.String()); err != nil {
 		return err
 	}
-	fmt.Fprintln(streams.Out(), color.Emphasise("Revoked"), u)
+	fmt.Fprintln(streams.Out(), ansi.Emphasise("Revoked"), u)
 	return nil
 }
