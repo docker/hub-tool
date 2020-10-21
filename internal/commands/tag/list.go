@@ -25,11 +25,11 @@ import (
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
-	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
+	"github.com/docker/hub-tool/internal/format/tabwriter"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -43,41 +43,45 @@ Images do not expire on Pro and Team plans, to find out more https://short/link
 
 var (
 	defaultColumns = []column{
-		{"TAG", func(t hub.Tag) string { return t.Name }},
-		{"DIGEST", func(t hub.Tag) string {
+		{"TAG", func(t hub.Tag) (string, int) { return t.Name, len(t.Name) }},
+		{"DIGEST", func(t hub.Tag) (string, int) {
 			if len(t.Images) > 0 {
-				return t.Images[0].Digest
+				return t.Images[0].Digest, len(t.Images[0].Digest)
 			}
-			return ""
+			return "", 0
 		}},
-		{"STATUS", func(t hub.Tag) string {
-			return t.Status
+		{"STATUS", func(t hub.Tag) (string, int) {
+			return t.Status, len(t.Status)
 		}},
-		{"EXPIRES", func(t hub.Tag) string {
+		{"EXPIRES", func(t hub.Tag) (string, int) {
 			if t.Expires.Nanosecond() == 0 {
-				return ""
+				return "", 0
 			}
-			return units.HumanDuration(time.Until(t.Expires))
+			s := units.HumanDuration(time.Until(t.Expires))
+			return s, len(s)
 		}},
-		{"LAST UPDATE", func(t hub.Tag) string {
+		{"LAST UPDATE", func(t hub.Tag) (string, int) {
 			if t.LastUpdated.Nanosecond() == 0 {
-				return ""
+				return "", 0
 			}
-			return fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
+			s := fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
+			return s, len(s)
 		}},
-		{"LAST PUSHED", func(t hub.Tag) string {
+		{"LAST PUSHED", func(t hub.Tag) (string, int) {
 			if t.LastPushed.Nanosecond() == 0 {
-				return ""
+				return "", 0
 			}
-			return units.HumanDuration(time.Since(t.LastPushed))
+			s := units.HumanDuration(time.Since(t.LastPushed))
+			return s, len(s)
 		}},
-		{"LAST PULLED", func(t hub.Tag) string {
+		{"LAST PULLED", func(t hub.Tag) (string, int) {
 			if t.LastPulled.Nanosecond() == 0 {
-				return ""
+				return "", 0
 			}
-			return units.HumanDuration(time.Since(t.LastPulled))
+			s := units.HumanDuration(time.Since(t.LastPulled))
+			return s, len(s)
 		}},
-		{"SIZE", func(t hub.Tag) string {
+		{"SIZE", func(t hub.Tag) (string, int) {
 			size := t.FullSize
 			if len(t.Images) > 0 {
 				size = 0
@@ -85,12 +89,13 @@ var (
 					size += image.Size
 				}
 			}
-			return units.HumanSize(float64(size))
+			s := units.HumanSize(float64(size))
+			return s, len(s)
 		}},
 	}
 	platformColumn = column{
 		"OS/ARCH",
-		func(t hub.Tag) string {
+		func(t hub.Tag) (string, int) {
 			var platforms []string
 			for _, image := range t.Images {
 				platform := fmt.Sprintf("%s/%s", image.Os, image.Architecture)
@@ -99,14 +104,15 @@ var (
 				}
 				platforms = append(platforms, platform)
 			}
-			return strings.Join(platforms, ",")
+			s := strings.Join(platforms, ",")
+			return s, len(s)
 		},
 	}
 )
 
 type column struct {
 	header string
-	value  func(t hub.Tag) string
+	value  func(t hub.Tag) (string, int)
 }
 
 type listOptions struct {
@@ -169,26 +175,28 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 
 func printTags(out io.Writer, values interface{}) error {
 	h := values.(*helper)
-	w := ansiterm.NewTabWriter(out, 20, 1, 3, ' ', 0)
-	var headers []string
+	tw := tabwriter.New(out, "    ")
 	for _, column := range defaultColumns {
-		headers = append(headers, column.header)
+		tw.Column(ansi.Header(column.header), len(column.header))
 	}
-	fmt.Fprintln(w, ansi.Header(strings.Join(headers, "\t")))
+
+	tw.Line()
+
 	for _, tag := range h.tags {
-		var values []string
 		for _, column := range defaultColumns {
-			values = append(values, column.value(tag))
+			value, width := column.value(tag)
+			tw.Column(value, width)
 		}
-		fmt.Fprintln(w, strings.Join(values, "\t"))
+		tw.Line()
 	}
-	if err := w.Flush(); err != nil {
+	if err := tw.Flush(); err != nil {
 		return err
 	}
 
 	if len(h.tags) < h.total {
 		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tags), h.total)))
 	}
+
 	return nil
 }
 
