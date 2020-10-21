@@ -26,7 +26,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/spf13/cobra"
 
-	"github.com/docker/hub-tool/internal/color"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
@@ -68,7 +68,7 @@ func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, image
 	}
 
 	if !opts.force {
-		fmt.Fprintln(streams.Out(), color.Warn("Please type the name of your repository to confirm deletion:"), namedTaggedRef.Name())
+		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your repository to confirm deletion:"), namedTaggedRef.Name())
 		reader := bufio.NewReader(streams.In())
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
