@@ -14,7 +14,7 @@
 include vars.mk
 export DOCKER_BUILDKIT=1
 
-BUILD_ARGS := --build-arg GO_VERSION=$(GO_VERSION)\
+BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION)\
 	--build-arg ALPINE_VERSION=$(ALPINE_VERSION)\
 	--build-arg GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION) \
 	--build-arg TAG_NAME=$(GIT_TAG_NAME) \
@@ -22,9 +22,11 @@ BUILD_ARGS := --build-arg GO_VERSION=$(GO_VERSION)\
 	--build-arg BINARY_NAME=$(BINARY_NAME) \
 	--build-arg BINARY=$(BINARY)
 
-E2E_ENV := --env E2E_HUB_USERNAME \
-           --env E2E_HUB_TOKEN \
-           --env E2E_TEST_NAME
+E2E_ENV:=--env E2E_HUB_USERNAME \
+	--env E2E_HUB_TOKEN \
+	--env E2E_TEST_NAME
+
+TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
 .PHONY: all
 all: lint validate build test
@@ -39,8 +41,22 @@ build: ## Build the tool in a container
 .PHONY: cross
 cross: ## Cross compile the tool binaries in a container
 	docker build $(BUILD_ARGS) . \
-	--output type=local,dest=./dist \
+	--output type=local,dest=./bin \
 	--target cross
+
+.PHONY: package-cross
+package-cross: cross ## Package the cross compiled binaries in tarballs for *nix and a zip for Windows
+	docker build $(BUILD_ARGS) . \
+		--platform linux/amd64 \
+		--output type=tar,dest=- \
+		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-amd64.tar.gz
+	docker build $(BUILD_ARGS) . \
+		--platform darwin/amd64 \
+		--output type=tar,dest=- \
+		--target package | gzip -9 > dist/$(BINARY_NAME)-darwin-amd64.tar.gz
+	cp bin/$(BINARY_NAME)_windows_amd64.exe $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
+	rm -f dist/$(BINARY_NAME)-windows-amd64.zip && zip dist/$(BINARY_NAME)-windows-amd64.zip -j packaging/LICENSE $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
+	rm -r $(TMPDIR_WIN_PKG)
 
 .PHONY: install
 install: build ## Install the tool to your /usr/local/bin/

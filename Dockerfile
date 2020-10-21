@@ -71,7 +71,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # HUB
 ####
 FROM scratch AS hub
-COPY --from=build /go/src/github.com/docker/hub-tool/bin/hub-tool_* /
+COPY --from=build /go/src/github.com/docker/hub-tool/bin/${BINARY_NAME}_* /
 
 ####
 # CROSS_BUILD
@@ -87,7 +87,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # CROSS
 ####
 FROM scratch AS cross
-COPY --from=cross-build /go/src/github.com/docker/hub-tool/dist /
+COPY --from=cross-build /go/src/github.com/docker/hub-tool/bin/* /
+
+####
+# PACKAGE
+####
+FROM scratch AS package
+ARG BINARY_NAME
+ARG TARGETOS
+ARG TARGETARCH
+COPY --from=builder /go/src/github.com/docker/hub-tool/packaging/LICENSE /${BINARY_NAME}/LICENSE
+COPY --from=cross /${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /${BINARY_NAME}/${BINARY_NAME}
 
 ####
 # GOTESTSUM
@@ -131,6 +141,6 @@ ENV BINARY_NAME=$BINARY_NAME
 ENV DOCKER_CONFIG="/root/.docker"
 
 # install hub tool
-COPY --from=cross-build /go/src/github.com/docker/hub-tool/dist/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-tool/bin/${BINARY}
+COPY --from=cross-build /go/src/github.com/docker/hub-tool/bin/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-tool/bin/${BINARY}
 RUN chmod +x ./bin/${BINARY}
 CMD ["make", "-f", "builder.Makefile", "e2e"]
