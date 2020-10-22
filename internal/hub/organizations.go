@@ -23,8 +23,9 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -85,36 +86,29 @@ func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organi
 	}
 
 	var organizations []Organization
-	wg := sync.WaitGroup{}
-	orgsCh := make(chan Organization, len(hubResponse.Results))
-	errCh := make(chan error, len(hubResponse.Results))
+	eg, _ := errgroup.WithContext(ctx)
+
 	for _, result := range hubResponse.Results {
-		wg.Add(1)
-		go func(result hubOrganizationResult) {
-			defer wg.Done()
-			subwg := sync.WaitGroup{}
-			subwg.Add(2)
+		result := result
+		eg.Go(func() error {
 			var (
 				teams   []Team
 				members []Member
 			)
-			go func() {
-				defer subwg.Done()
+			subeg, _ := errgroup.WithContext(ctx)
+
+			subeg.Go(func() error {
 				teams, err = c.GetTeams(result.OrgName)
-				if err != nil {
-					errCh <- err
-					return
-				}
-			}()
-			go func() {
-				defer subwg.Done()
+				return err
+			})
+			subeg.Go(func() error {
 				members, err = c.GetMembers(result.OrgName)
-				if err != nil {
-					errCh <- err
-					return
-				}
-			}()
-			subwg.Wait()
+				return err
+			})
+
+			if err := subeg.Wait(); err != nil {
+				return err
+			}
 			organization := Organization{
 				Namespace: result.OrgName,
 				FullName:  result.FullName,
@@ -122,18 +116,16 @@ func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organi
 				Teams:     teams,
 				Members:   members,
 			}
-			orgsCh <- organization
-		}(result)
+			organizations = append(organizations, organization)
+
+			return nil
+		})
 	}
-	wg.Wait()
-	for i := 0; i < len(hubResponse.Results); i++ {
-		select {
-		case err := <-errCh:
-			return nil, "", err
-		case org := <-orgsCh:
-			organizations = append(organizations, org)
-		}
+
+	if err := eg.Wait(); err != nil {
+		return []Organization{}, "", err
 	}
+
 	sort.Slice(organizations, func(i, j int) bool {
 		return organizations[i].Namespace < organizations[j].Namespace
 	})
