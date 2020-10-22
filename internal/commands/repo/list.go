@@ -109,37 +109,34 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, a
 		return err
 	}
 
-	return opts.Print(streams.Out(), &helper{repositories, total}, printRepositories)
+	return opts.Print(streams.Out(), repositories, printRepositories(total))
 }
 
-func printRepositories(out io.Writer, values interface{}) error {
-	h := values.(*helper)
-	tw := tabwriter.New(out, "    ")
+func printRepositories(total int) format.PrettyPrinter {
+	return func(out io.Writer, values interface{}) error {
+		repositories := values.([]hub.Repository)
+		tw := tabwriter.New(out, "    ")
 
-	for _, column := range defaultColumns {
-		tw.Column(ansi.Header(column.header), len(column.header))
-	}
-
-	tw.Line()
-
-	for _, repository := range h.repositories {
 		for _, column := range defaultColumns {
-			value, width := column.value(repository)
-			tw.Column(value, width)
+			tw.Column(ansi.Header(column.header), len(column.header))
 		}
+
 		tw.Line()
-	}
-	if err := tw.Flush(); err != nil {
-		return err
-	}
 
-	if len(h.repositories) < h.total {
-		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.repositories), h.total)))
-	}
-	return nil
-}
+		for _, repository := range repositories {
+			for _, column := range defaultColumns {
+				value, width := column.value(repository)
+				tw.Column(value, width)
+			}
+			tw.Line()
+		}
+		if err := tw.Flush(); err != nil {
+			return err
+		}
 
-type helper struct {
-	repositories []hub.Repository
-	total        int
+		if len(repositories) < total {
+			fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(repositories), total)))
+		}
+		return nil
+	}
 }

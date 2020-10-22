@@ -170,34 +170,36 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 		defaultColumns = append(defaultColumns, platformColumn)
 	}
 
-	return opts.Print(streams.Out(), &helper{tags, total}, printTags)
+	return opts.Print(streams.Out(), tags, printTags(total))
 }
 
-func printTags(out io.Writer, values interface{}) error {
-	h := values.(*helper)
-	tw := tabwriter.New(out, "    ")
-	for _, column := range defaultColumns {
-		tw.Column(ansi.Header(column.header), len(column.header))
-	}
-
-	tw.Line()
-
-	for _, tag := range h.tags {
+func printTags(total int) format.PrettyPrinter {
+	return func(out io.Writer, values interface{}) error {
+		tags := values.([]hub.Tag)
+		tw := tabwriter.New(out, "    ")
 		for _, column := range defaultColumns {
-			value, width := column.value(tag)
-			tw.Column(value, width)
+			tw.Column(ansi.Header(column.header), len(column.header))
 		}
+
 		tw.Line()
-	}
-	if err := tw.Flush(); err != nil {
-		return err
-	}
 
-	if len(h.tags) < h.total {
-		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tags), h.total)))
-	}
+		for _, tag := range tags {
+			for _, column := range defaultColumns {
+				value, width := column.value(tag)
+				tw.Column(value, width)
+			}
+			tw.Line()
+		}
+		if err := tw.Flush(); err != nil {
+			return err
+		}
 
-	return nil
+		if len(tags) < total {
+			fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(tags), total)))
+		}
+
+		return nil
+	}
 }
 
 const (
@@ -252,9 +254,4 @@ func promptCallToAction(out io.Writer, client accountInfo) error {
 
 	_, err = fmt.Fprint(out, ansi.Info(callToAction))
 	return err
-}
-
-type helper struct {
-	tags  []hub.Tag
-	total int
 }
