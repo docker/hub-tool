@@ -4,6 +4,7 @@ on: [pull_request]
 jobs:
   lint:
     name: Lint
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       GO111MODULE: "on"
@@ -27,6 +28,7 @@ jobs:
 
   build-linux:
     name: Build Linux
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       GO111MODULE: "on"
