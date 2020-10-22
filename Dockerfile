@@ -131,16 +131,13 @@ RUN make -f builder.Makefile download
 # E2E
 ####
 FROM builder AS e2e
-ARG TARGETOS
-ARG TARGETARCH
 ARG TAG_NAME
-ARG BINARY_NAME
 ARG BINARY
 ENV TAG_NAME=$TAG_NAME
-ENV BINARY_NAME=$BINARY_NAME
+ENV BINARY=$BINARY
 ENV DOCKER_CONFIG="/root/.docker"
 
 # install hub tool
-COPY --from=cross-build /go/src/github.com/docker/hub-tool/bin/${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /go/src/github.com/docker/hub-tool/bin/${BINARY}
+COPY --from=build /go/src/github.com/docker/hub-tool/bin/${BINARY} ./bin/${BINARY}
 RUN chmod +x ./bin/${BINARY}
 CMD ["make", "-f", "builder.Makefile", "e2e"]
