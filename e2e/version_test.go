@@ -26,15 +26,22 @@ import (
 	"github.com/docker/hub-tool/internal"
 )
 
-func TestVersion(t *testing.T) {
+func TestVersionCmd(t *testing.T) {
+	cmd, cleanup := hubToolCmd(t, "version")
+	defer cleanup()
+
+	output := icmd.RunCmd(cmd).Assert(t, icmd.Success).Combined()
+	expected := fmt.Sprintf("Version:    %s\nGit commit: %s\n", internal.Version, internal.GitCommit)
+
+	assert.Equal(t, output, expected)
+}
+
+func TestVersionFlag(t *testing.T) {
 	cmd, cleanup := hubToolCmd(t, "--version")
 	defer cleanup()
 
 	output := icmd.RunCmd(cmd).Assert(t, icmd.Success).Combined()
-	expected := fmt.Sprintf(
-		`Version:    %s
-Git commit: %s
-`, internal.Version, internal.GitCommit)
+	expected := fmt.Sprintf("Docker Hub Tool %s, build %s\n", internal.Version, internal.GitCommit[:7])
 
 	assert.Equal(t, output, expected)
 }

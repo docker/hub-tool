@@ -19,6 +19,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
@@ -45,12 +46,13 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 		Annotations: map[string]string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
-				return runVersion()
+				fmt.Fprintf(streams.Out(), "Docker Hub Tool %s, build %s\n", internal.Version, internal.GitCommit[:7])
+				return nil
 			}
 			return cmd.Help()
 		},
 	}
-	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display version of the scan plugin")
+	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display the version of this tool")
 
 	cmd.AddCommand(
 		account.NewAccountCmd(streams, hubClient),
@@ -58,12 +60,19 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 		org.NewOrgCmd(streams, hubClient),
 		repo.NewRepoCmd(streams, hubClient),
 		tag.NewTagCmd(streams, hubClient),
+		newVersionCmd(streams),
 	)
 	return cmd
 }
 
-func runVersion() error {
-	fmt.Println("Version:   ", internal.Version)
-	fmt.Println("Git commit:", internal.GitCommit)
-	return nil
+func newVersionCmd(streams command.Streams) *cobra.Command {
+	return &cobra.Command{
+		Use:  "version",
+		Long: "Version information about this tool",
+		Args: cli.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := fmt.Fprintf(streams.Out(), "Version:    %s\nGit commit: %s\n", internal.Version, internal.GitCommit)
+			return err
+		},
+	}
 }
