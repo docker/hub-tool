@@ -14,17 +14,17 @@
 include vars.mk
 export DOCKER_BUILDKIT=1
 
-BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION)\
-	--build-arg ALPINE_VERSION=$(ALPINE_VERSION)\
-	--build-arg GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION) \
-	--build-arg TAG_NAME=$(GIT_TAG_NAME) \
-	--build-arg GOTESTSUM_VERSION=$(GOTESTSUM_VERSION) \
-	--build-arg BINARY_NAME=$(BINARY_NAME) \
-	--build-arg BINARY=$(BINARY)
+BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION) \
+    --build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
+    --build-arg GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION) \
+    --build-arg TAG_NAME=$(TAG_NAME) \
+    --build-arg GOTESTSUM_VERSION=$(GOTESTSUM_VERSION) \
+    --build-arg BINARY_NAME=$(BINARY_NAME) \
+    --build-arg BINARY=$(BINARY)
 
 E2E_ENV:=--env E2E_HUB_USERNAME \
-	--env E2E_HUB_TOKEN \
-	--env E2E_TEST_NAME
+    --env E2E_HUB_TOKEN \
+    --env E2E_TEST_NAME
 
 TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
@@ -34,18 +34,19 @@ all: lint validate build test
 .PHONY: build
 build: ## Build the tool in a container
 	docker build $(BUILD_ARGS) . \
-	--output type=local,dest=./bin \
-	--platform local \
-	--target hub
+		--output type=local,dest=./bin \
+		--platform local \
+		--target hub
 
 .PHONY: cross
 cross: ## Cross compile the tool binaries in a container
 	docker build $(BUILD_ARGS) . \
-	--output type=local,dest=./bin \
-	--target cross
+		--output type=local,dest=./bin \
+		--target cross
 
 .PHONY: package-cross
 package-cross: cross ## Package the cross compiled binaries in tarballs for *nix and a zip for Windows
+	mkdir -p dist
 	docker build $(BUILD_ARGS) . \
 		--platform linux/amd64 \
 		--output type=tar,dest=- \
@@ -98,8 +99,8 @@ lint: ## Run the go linter
 .PHONY: validate-headers
 validate-headers: ## Validate files license header
 	docker run --rm -v $(CURDIR):/work -w /work \
-	 golang:${GO_VERSION} \
-	 bash -c 'go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader'
+		golang:${GO_VERSION} \
+		bash -c 'go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader'
 
 .PHONY: validate-go-mod
 validate-go-mod: ## Validate go.mod and go.sum are up-to-date

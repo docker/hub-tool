@@ -8,7 +8,7 @@ GOOS?=$(shell go env GOOS)
 GOARCH?=$(shell go env GOARCH)
 BINARY_EXT=
 ifeq ($(GOOS),windows)
-	BINARY_EXT=.exe
+    BINARY_EXT=.exe
 endif
 BINARY_NAME=hub-tool
 PLATFORM_BINARY:=$(BINARY_NAME)_$(GOOS)_$(GOARCH)$(BINARY_EXT)
