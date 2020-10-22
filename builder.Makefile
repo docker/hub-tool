@@ -1,31 +1,30 @@
 include vars.mk
 
-NULL := /dev/null
+NULL:=/dev/null
 
 ifeq ($(COMMIT),)
-  COMMIT := $(shell git rev-parse --short HEAD 2> $(NULL))
+    COMMIT:=$(shell git rev-parse HEAD 2> $(NULL))
 endif
-
 ifeq ($(TAG_NAME),)
-  TAG_NAME := $(shell git describe --always --dirty --abbrev=10 2> $(NULL))
+    TAG_NAME:=$(shell git describe --tags --match "v[0-9]*" 2> $(NULL))
 endif
 
 PKG_NAME:=github.com/docker/hub-tool
 STATIC_FLAGS:=CGO_ENABLED=0
 LDFLAGS:="-s -w \
-  -X $(PKG_NAME)/internal.GitCommit=$(COMMIT) \
-  -X $(PKG_NAME)/internal.Version=$(TAG_NAME)"
+    -X $(PKG_NAME)/internal.GitCommit=$(COMMIT) \
+    -X $(PKG_NAME)/internal.Version=$(TAG_NAME)"
 GO_BUILD:=go build -trimpath -ldflags=$(LDFLAGS)
 VARS:=BINARY_NAME=${BINARY_NAME} \
-	BINARY=${BINARY}
+    BINARY=${BINARY}
 
 ifneq ($(strip $(E2E_TEST_NAME)),)
-	RUN_TEST=-test.run $(E2E_TEST_NAME)
+    RUN_TEST=-test.run $(E2E_TEST_NAME)
 endif
 
 TAR_TRANSFORM:=--transform s/packaging/${BINARY_NAME}/ --transform s/bin/${BINARY_NAME}/ --transform s/${PLATFORM_BINARY}/${BINARY_NAME}/
 ifneq ($(findstring bsd,$(shell tar --version)),)
-  TAR_TRANSFORM=-s /packaging/${BINARY_NAME}/ -s /bin/${BINARY_NAME}/ -s /${PLATFORM_BINARY}/${BINARY_NAME}/
+    TAR_TRANSFORM=-s /packaging/${BINARY_NAME}/ -s /bin/${BINARY_NAME}/ -s /${PLATFORM_BINARY}/${BINARY_NAME}/
 endif
 TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
@@ -40,7 +39,7 @@ e2e:
 
 .PHONY: test-unit
 test-unit:
-	gotestsum $(shell go list ./... | grep -vE '/e2e')
+	$(STATIC_FLAGS) gotestsum $(shell go list ./... | grep -vE '/e2e')
 
 cross:
 	GOOS=linux   GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_linux_amd64 ./cmd/$(BINARY_NAME)
@@ -68,7 +67,11 @@ else
 	tar -czf dist/$(BINARY_NAME)-$(GOOS)-$(GOARCH).tar.gz $(TAR_TRANSFORM) packaging/LICENSE bin/$(PLATFORM_BINARY)
 endif
 
-# For multi-platform (windows,macos,linux) github actions
-.PHONY: download
-download:
-	GO111MODULE=on go get gotest.tools/gotestsum@v${GOTESTSUM_VERSION}
+.PHONY: ci-extract
+ci-extract:
+	mkdir -p bin
+ifeq ($(GOOS),windows)
+	7z e -obin/ dist/$(BINARY_NAME)-windows-amd64.zip $(BINARY_NAME).exe
+else
+	tar xzf dist/$(BINARY_NAME)-$(GOOS)-$(GOARCH).tar.gz --strip-components 1 --directory bin/ $(BINARY_NAME)/$(BINARY_NAME)
+endif

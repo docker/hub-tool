@@ -36,7 +36,35 @@ jobs:
           ./golangci-lint run
 
   build:
+    name: Cross compile
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+        id: go
+
+      - name: Checkout code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Unit test
+        run: make test-unit
+
+      - name: Cross compile
+        run: make TAG_NAME=${{ github.event.inputs.tag }} package-cross
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: hub-tool-packages
+          path: ./dist/*
+
+  test:
     runs-on: ${{ matrix.os }}
+    needs: [build]
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
@@ -59,25 +87,23 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Download binaries
-        run: make -f builder.Makefile download
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: dist
 
-      - name: Build binary, package and run tests
+      - name: Extract platform binary
+        run: mv dist/hub-tool-packages/* dist/ && make -f builder.Makefile ci-extract
+
+      - name: Run e2e tests
         env:
           E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
           E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
-        run: make TAG_NAME=${{ github.event.inputs.tag }} -f builder.Makefile build test-unit e2e package
-
-      - name: Upload binary artifact
-        if: ${{ github.event.inputs.tag != '' }} # don't push artifacts if no tag is specified
-        uses: actions/upload-artifact@v2
-        with:
-          name: hub-tool-${{ matrix.os }}
-          path: ./dist/
+        run: make TAG_NAME=${{ github.event.inputs.tag }} -f builder.Makefile e2e
 
   release:
     runs-on: ubuntu-latest
-    needs: [lint, build]
+    needs: [lint, build, test]
     if: ${{ github.event.inputs.tag != '' }} # don't release if no tag is specified
     steps:
       - name: Download artifacts
