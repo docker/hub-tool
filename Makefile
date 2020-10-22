@@ -56,6 +56,10 @@ package-cross: cross ## Package the cross compiled binaries in tarballs for *nix
 		--output type=tar,dest=- \
 		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-arm64.tar.gz
 	docker build $(BUILD_ARGS) . \
+		--platform linux/arm \
+		--output type=tar,dest=- \
+		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-arm.tar.gz
+	docker build $(BUILD_ARGS) . \
 		--platform darwin/amd64 \
 		--output type=tar,dest=- \
 		--target package | gzip -9 > dist/$(BINARY_NAME)-darwin-amd64.tar.gz
