@@ -44,6 +44,7 @@ test-unit:
 cross:
 	GOOS=linux   GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_linux_amd64 ./cmd/$(BINARY_NAME)
 	GOOS=linux   GOARCH=arm64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_linux_arm64 ./cmd/$(BINARY_NAME)
+	GOOS=linux   GOARCH=arm   $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_linux_arm ./cmd/$(BINARY_NAME)
 	GOOS=darwin  GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_darwin_amd64 ./cmd/$(BINARY_NAME)
 	GOOS=windows GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_windows_amd64.exe ./cmd/$(BINARY_NAME)
 
