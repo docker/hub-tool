@@ -14,6 +14,7 @@ on:
 jobs:
   lint:
     name: Lint
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       GO111MODULE: "on"
@@ -37,6 +38,7 @@ jobs:
 
   build:
     name: Cross compile
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       GO111MODULE: "on"
@@ -63,6 +65,8 @@ jobs:
           path: ./dist/*
 
   test:
+    name: Native e2e tests
+    timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     needs: [build]
     strategy:
@@ -102,6 +106,8 @@ jobs:
         run: make TAG_NAME=${{ github.event.inputs.tag }} -f builder.Makefile e2e
 
   release:
+    name: Do GitHub release
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     needs: [lint, build, test]
     if: ${{ github.event.inputs.tag != '' }} # don't release if no tag is specified
