@@ -97,7 +97,7 @@ func TestPrintImage(t *testing.T) {
 	}
 	ref, err := reference.ParseDockerRef("image:latest")
 	assert.NilError(t, err)
-	image := Image{ref, manifest, config, manifestDescriptor}
+	image := Image{ref.Name(), manifest, config, manifestDescriptor}
 
 	out := bytes.NewBuffer(nil)
 	err = printImage(out, &image)
