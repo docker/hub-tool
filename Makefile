@@ -29,7 +29,7 @@ E2E_ENV:=--env E2E_HUB_USERNAME \
 TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
 .PHONY: all
-all: lint validate build test
+all: build
 
 .PHONY: build
 build: ## Build the tool in a container

@@ -71,7 +71,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # HUB
 ####
 FROM scratch AS hub
-COPY --from=build /go/src/github.com/docker/hub-tool/bin/${BINARY_NAME}_* /
+ARG BINARY_NAME
+COPY --from=build /go/src/github.com/docker/hub-tool/bin/${BINARY_NAME} /${BINARY_NAME}
 
 ####
 # CROSS_BUILD
