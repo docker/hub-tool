@@ -1,5 +1,5 @@
 Manifest:
-Name:		docker.io/library/image:latest
+Name:		docker.io/library/image
 MediaType:	mediatype/manifest
 Digest:		sha256:abcdef
 Platform:	os/arch/variant/osversion/feature1/feature2
@@ -12,7 +12,7 @@ Created:	Less than a second ago
 
 Config:
 MediaType:	mediatype/config
-Size:	123B
+Size:		123B
 Digest:	sha256:beef
 Command:	"./cmd parameter"
 Entrypoint:	"./entrypoint parameter"
@@ -29,7 +29,7 @@ Stop signal:		SIGTERM
 
 Layers:
 MediaType:	mediatype/layer
-Size:	456B
+Size:		456B
 Digest:	sha256:c0ffee
 Command:	apt-get install
 Created:	Less than a second ago

@@ -51,7 +51,7 @@ type inspectOptions struct {
 
 //Image is the combination of a manifest and its config object
 type Image struct {
-	Name       reference.Named
+	Name       string
 	Manifest   ocispec.Manifest
 	Config     ocispec.Image
 	Descriptor ocispec.Descriptor
@@ -99,7 +99,7 @@ func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOpti
 	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
 		return formatManifestlist(streams, opts.format, raw, descriptor, imageRef)
 	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
-		return formatManifest(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref)
+		return formatManifest(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref.Name())
 	default:
 		fmt.Println("Other mediatype")
 		fmt.Printf("%s\n", raw)
@@ -120,8 +120,8 @@ func formatManifestlist(streams command.Streams, format string, raw []byte, desc
 	}
 }
 
-func formatManifest(ctx context.Context, streams command.Streams, resolver *imagetools.Resolver, format string, raw []byte, descriptor ocispec.Descriptor, ref reference.Named) error {
-	image, err := readImage(ctx, resolver, raw, descriptor, ref)
+func formatManifest(ctx context.Context, streams command.Streams, resolver *imagetools.Resolver, format string, raw []byte, descriptor ocispec.Descriptor, name string) error {
+	image, err := readImage(ctx, resolver, raw, descriptor, name)
 	if err != nil {
 		return err
 	}
@@ -143,13 +143,13 @@ func formatManifest(ctx context.Context, streams command.Streams, resolver *imag
 	}
 }
 
-func readImage(ctx context.Context, resolver *imagetools.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, ref reference.Named) (*Image, error) {
+func readImage(ctx context.Context, resolver *imagetools.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, name string) (*Image, error) {
 	var manifest ocispec.Manifest
 	if err := json.Unmarshal(rawManifest, &manifest); err != nil {
 		return nil, err
 	}
 
-	configRef := fmt.Sprintf("%s@%s", ref.Name(), manifest.Config.Digest)
+	configRef := fmt.Sprintf("%s@%s", name, manifest.Config.Digest)
 	configRaw, err := resolver.GetDescriptor(ctx, configRef, manifest.Config)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func readImage(ctx context.Context, resolver *imagetools.Resolver, rawManifest [
 	if err := json.Unmarshal(configRaw, &config); err != nil {
 		return nil, err
 	}
-	return &Image{ref, manifest, config, descriptor}, nil
+	return &Image{name, manifest, config, descriptor}, nil
 }
 
 func printImage(out io.Writer, image *Image) error {
@@ -203,7 +203,7 @@ func printManifest(out io.Writer, image *Image) error {
 func printConfig(out io.Writer, image *Image) error {
 	fmt.Fprintf(out, ansi.Title("Config:")+"\n")
 	fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", image.Manifest.Config.MediaType)
-	fmt.Fprintf(out, ansi.Key("Size:")+"\t%v\n", units.HumanSize(float64(image.Manifest.Config.Size)))
+	fmt.Fprintf(out, ansi.Key("Size:")+"\t\t%v\n", units.HumanSize(float64(image.Manifest.Config.Size)))
 	fmt.Fprintf(out, ansi.Key("Digest:")+"\t%s\n", image.Manifest.Config.Digest)
 	if len(image.Config.Config.Cmd) > 0 {
 		fmt.Fprintf(out, ansi.Key("Command:")+"\t%q\n", strings.TrimPrefix(strings.Join(image.Config.Config.Cmd, " "), "/bin/sh -c "))
@@ -255,7 +255,7 @@ func printLayers(out io.Writer, image *Image) error {
 			fmt.Fprintln(out)
 		}
 		fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", layer.MediaType)
-		fmt.Fprintf(out, ansi.Key("Size:")+"\t%v\n", units.HumanSize(float64(layer.Size)))
+		fmt.Fprintf(out, ansi.Key("Size:")+"\t\t%v\n", units.HumanSize(float64(layer.Size)))
 		fmt.Fprintf(out, ansi.Key("Digest:")+"\t%s\n", layer.Digest)
 		if len(image.Manifest.Layers) == len(history) {
 			fmt.Fprintf(out, ansi.Key("Command:")+"\t%s\n", cleanCreatedBy(history[i].CreatedBy))
