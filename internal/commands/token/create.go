@@ -65,16 +65,17 @@ func runCreate(streams command.Streams, hubClient *hub.Client, opts createOption
 	if err != nil {
 		return err
 	}
-	return opts.Print(streams.Out(), &printHelper{hubClient.AuthConfig.Username, token, opts.quiet}, printCreatedToken)
-}
-
-func printCreatedToken(out io.Writer, value interface{}) error {
-	helper := value.(*printHelper)
-	if helper.quiet {
-		fmt.Fprintln(out, helper.token.Token)
+	if opts.quiet {
+		fmt.Fprintln(streams.Out(), token.Token)
 		return nil
 	}
-	fmt.Fprintf(out, ansi.Emphasise("Personal Access Token successfully created!")+`
+	return opts.Print(streams.Out(), token, printCreatedToken(hubClient))
+}
+
+func printCreatedToken(hubClient *hub.Client) format.PrettyPrinter {
+	return func(out io.Writer, value interface{}) error {
+		helper := value.(*hub.Token)
+		fmt.Fprintf(out, ansi.Emphasise("Personal Access Token successfully created!")+`
 
 When logging in from your Docker CLI client, use this token as a password.
 `+ansi.Header("Description:")+` %s
@@ -88,14 +89,9 @@ To use the access token from your Docker CLI client:
 `+ansi.Warn(`WARNING: This access token will only be displayed once.
 It will not be stored and cannot be retrieved. Please be sure to save it now.
 `),
-		helper.token.Description,
-		helper.userName,
-		ansi.Emphasise(helper.token.Token))
-	return nil
-}
-
-type printHelper struct {
-	userName string
-	token    *hub.Token
-	quiet    bool
+			helper.Description,
+			hubClient.AuthConfig.Username,
+			ansi.Emphasise(helper.Token))
+		return nil
+	}
 }

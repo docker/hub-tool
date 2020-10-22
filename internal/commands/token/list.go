@@ -98,35 +98,32 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) e
 	if err != nil {
 		return err
 	}
-	return opts.Print(streams.Out(), &helper{tokens, total}, printTokens)
+	return opts.Print(streams.Out(), tokens, printTokens(total))
 }
 
-func printTokens(out io.Writer, values interface{}) error {
-	h := values.(*helper)
-	tw := tabwriter.New(out, "    ")
-	for _, column := range defaultColumns {
-		tw.Column(ansi.Header(column.header), len(column.header))
-	}
-
-	tw.Line()
-	for _, token := range h.tokens {
+func printTokens(total int) format.PrettyPrinter {
+	return func(out io.Writer, values interface{}) error {
+		tokens := values.([]hub.Token)
+		tw := tabwriter.New(out, "    ")
 		for _, column := range defaultColumns {
-			value, width := column.value(token)
-			tw.Column(value, width)
+			tw.Column(ansi.Header(column.header), len(column.header))
 		}
+
 		tw.Line()
-	}
-	if err := tw.Flush(); err != nil {
-		return err
-	}
+		for _, token := range tokens {
+			for _, column := range defaultColumns {
+				value, width := column.value(token)
+				tw.Column(value, width)
+			}
+			tw.Line()
+		}
+		if err := tw.Flush(); err != nil {
+			return err
+		}
 
-	if len(h.tokens) < h.total {
-		fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(h.tokens), h.total)))
+		if len(tokens) < total {
+			fmt.Fprintln(out, ansi.Info(fmt.Sprintf("%v/%v listed, use --all flag to show all", len(tokens), total)))
+		}
+		return nil
 	}
-	return nil
-}
-
-type helper struct {
-	tokens []hub.Token
-	total  int
 }
