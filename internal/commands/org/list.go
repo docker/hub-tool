@@ -66,9 +66,10 @@ type listOptions struct {
 func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
-		Use:   listName,
-		Short: "List all the organizations",
-		Args:  cli.NoArgs,
+		Use:                   listName,
+		Short:                 "List all the organizations",
+		Args:                  cli.NoArgs,
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, listName)
 		},
@@ -77,7 +78,6 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

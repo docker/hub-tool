@@ -60,9 +60,10 @@ type Image struct {
 func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts inspectOptions
 	cmd := &cobra.Command{
-		Use:   inspectName + " [OPTIONS] REPOSITORY:TAG",
-		Short: "Show the details of an image in the registry",
-		Args:  cli.ExactArgs(1),
+		Use:                   inspectName + " [OPTIONS] REPOSITORY:TAG",
+		Short:                 "Show the details of an image in the registry",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, inspectName)
 		},
@@ -71,7 +72,6 @@ func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string
 		},
 	}
 	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json|raw")`)
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

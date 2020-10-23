@@ -45,9 +45,10 @@ type inspectOptions struct {
 func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts inspectOptions
 	cmd := &cobra.Command{
-		Use:   inspectName + " [OPTIONS] TOKEN_UUID",
-		Short: "Inspect a Personal Access Token",
-		Args:  cli.ExactArgs(1),
+		Use:                   inspectName + " [OPTIONS] TOKEN_UUID",
+		Short:                 "Inspect a Personal Access Token",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, inspectName)
 		},
@@ -56,7 +57,6 @@ func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

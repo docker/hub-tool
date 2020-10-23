@@ -42,9 +42,10 @@ type rmOptions struct {
 func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:   rmName + " [OPTIONS] REPOSITORY",
-		Short: "Delete a repository",
-		Args:  cli.ExactArgs(1),
+		Use:                   rmName + " [OPTIONS] REPOSITORY",
+		Short:                 "Delete a repository",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, rmName)
 		},
@@ -53,7 +54,6 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		},
 	}
 	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the repository")
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

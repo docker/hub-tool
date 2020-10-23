@@ -58,9 +58,10 @@ type teamsOptions struct {
 func newTeamsCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts teamsOptions
 	cmd := &cobra.Command{
-		Use:   teamsName + " ORGANIZATION",
-		Short: "List all the teams in an organization",
-		Args:  cli.ExactArgs(1),
+		Use:                   teamsName + " ORGANIZATION",
+		Short:                 "List all the teams in an organization",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, teamsName)
 		},
@@ -69,7 +70,6 @@ func newTeamsCmd(streams command.Streams, hubClient *hub.Client, parent string) 
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

@@ -40,10 +40,12 @@ type options struct {
 func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *cobra.Command {
 	var flags options
 	cmd := &cobra.Command{
-		Use:         name,
-		Short:       "Docker Hub Tool",
-		Long:        `A tool to manage your Docker Hub images`,
-		Annotations: map[string]string{},
+		Use:                   name,
+		Short:                 "Docker Hub Tool",
+		Long:                  `A tool to manage your Docker Hub images`,
+		Annotations:           map[string]string{},
+		SilenceUsage:          true,
+		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
 				fmt.Fprintf(streams.Out(), "Docker Hub Tool %s, build %s\n", internal.Version, internal.GitCommit[:7])
@@ -67,9 +69,9 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 
 func newVersionCmd(streams command.Streams) *cobra.Command {
 	return &cobra.Command{
-		Use:  "version",
-		Long: "Version information about this tool",
-		Args: cli.NoArgs,
+		Use:   "version",
+		Short: "Version information about this tool",
+		Args:  cli.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := fmt.Fprintf(streams.Out(), "Version:    %s\nGit commit: %s\n", internal.Version, internal.GitCommit)
 			return err

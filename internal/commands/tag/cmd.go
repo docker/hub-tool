@@ -31,10 +31,10 @@ const (
 //NewTagCmd configures the tag manage command
 func NewTagCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  tagName,
-		Long: "Manage tags",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(streams.Err()),
+		Use:   tagName,
+		Short: "Manage tags",
+		Args:  cli.NoArgs,
+		RunE:  command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
 		newInspectCmd(streams, hubClient, tagName),

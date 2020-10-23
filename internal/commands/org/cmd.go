@@ -31,10 +31,11 @@ const (
 //NewOrgCmd configures the org manage command
 func NewOrgCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  orgName,
-		Long: "Manage organizations",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(streams.Err()),
+		Use:                   orgName,
+		Short:                 "Manage organizations",
+		Args:                  cli.NoArgs,
+		DisableFlagsInUseLine: true,
+		RunE:                  command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
 		newListCmd(streams, hubClient, orgName),
