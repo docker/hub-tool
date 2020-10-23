@@ -17,7 +17,6 @@
 package hub
 
 import (
-	"errors"
 	"os"
 
 	"github.com/docker/docker/api/types/registry"
