@@ -53,7 +53,7 @@ func newRevokeCmd(streams command.Streams, hubClient *hub.Client, parent string)
 			return runRevoke(streams, hubClient, opts, args[0])
 		},
 	}
-	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the tag")
+	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Force deletion of the tag")
 	return cmd
 }
 
