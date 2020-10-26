@@ -43,9 +43,10 @@ type createOptions struct {
 func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts createOptions
 	cmd := &cobra.Command{
-		Use:   createName + " [OPTIONS]",
-		Short: "Create a Personal Access Token",
-		Args:  cli.NoArgs,
+		Use:                   createName + " [OPTIONS]",
+		Short:                 "Create a Personal Access Token",
+		Args:                  cli.NoArgs,
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, createName)
 		},
@@ -56,7 +57,6 @@ func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().StringVar(&opts.description, "description", "", "Set token's description")
 	cmd.Flags().BoolVar(&opts.quiet, "quiet", false, "Display only created token")
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

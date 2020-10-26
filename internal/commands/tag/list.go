@@ -125,9 +125,10 @@ type listOptions struct {
 func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
-		Use:   lsName + " [OPTION] REPOSITORY",
-		Short: "List all the images in a repository",
-		Args:  cli.ExactArgs(1),
+		Use:                   lsName + " [OPTION] REPOSITORY",
+		Short:                 "List all the images in a repository",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, lsName)
 		},
@@ -139,7 +140,6 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available tags")
 	cmd.Flags().StringVar(&opts.sort, "sort", "", "Sort tags by (updated|name)[=(asc|desc)] (e.g.: --sort updated or --sort name=desc)")
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

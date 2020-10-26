@@ -41,9 +41,10 @@ type updateOptions struct {
 func newUpdateCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts updateOptions
 	cmd := &cobra.Command{
-		Use:   updateName + " [OPTIONS] TOKEN_UUID",
-		Short: "Update a Personal Access Token",
-		Args:  cli.ExactArgs(1),
+		Use:                   updateName + " [OPTIONS] TOKEN_UUID",
+		Short:                 "Update a Personal Access Token",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, updateName)
 		},
@@ -53,7 +54,6 @@ func newUpdateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 	}
 	cmd.Flags().StringVar(&opts.description, "description", "", "Set token's description")
 	cmd.Flags().BoolVar(&opts.setActive, "set-active", true, "Activate or deactivate the token")
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

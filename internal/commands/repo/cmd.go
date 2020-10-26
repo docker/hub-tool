@@ -31,10 +31,11 @@ const (
 //NewRepoCmd configures the repo manage command
 func NewRepoCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  repoName,
-		Long: "Manage repositories",
-		Args: cli.NoArgs,
-		RunE: command.ShowHelp(streams.Err()),
+		Use:                   repoName,
+		Short:                 "Manage repositories",
+		Args:                  cli.NoArgs,
+		DisableFlagsInUseLine: true,
+		RunE:                  command.ShowHelp(streams.Err()),
 	}
 	cmd.AddCommand(
 		newListCmd(streams, hubClient, repoName),

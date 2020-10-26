@@ -53,9 +53,10 @@ type memberOptions struct {
 func newMembersCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts memberOptions
 	cmd := &cobra.Command{
-		Use:   membersName + " ORGANIZATION",
-		Short: "List all the members in an organization",
-		Args:  cli.ExactArgs(1),
+		Use:                   membersName + " ORGANIZATION",
+		Short:                 "List all the members in an organization",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, membersName)
 		},
@@ -64,7 +65,6 @@ func newMembersCmd(streams command.Streams, hubClient *hub.Client, parent string
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

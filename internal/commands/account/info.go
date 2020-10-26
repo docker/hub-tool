@@ -43,9 +43,10 @@ type infoOptions struct {
 func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts infoOptions
 	cmd := &cobra.Command{
-		Use:   infoName + " [OPTIONS]",
-		Short: "Print the account information",
-		Args:  cli.NoArgs,
+		Use:                   infoName + " [OPTIONS]",
+		Short:                 "Print the account information",
+		Args:                  cli.NoArgs,
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, infoName)
 		},
@@ -54,7 +55,6 @@ func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

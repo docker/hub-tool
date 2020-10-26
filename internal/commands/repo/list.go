@@ -78,9 +78,10 @@ type listOptions struct {
 func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
-		Use:   listName + " [ORGANIZATION]",
-		Short: "List all the repositories from your account or an organization",
-		Args:  cli.RequiresMaxArgs(1),
+		Use:                   listName + " [ORGANIZATION]",
+		Short:                 "List all the repositories from your account or an organization",
+		Args:                  cli.RequiresMaxArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, listName)
 		},
@@ -90,7 +91,6 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	}
 	cmd.Flags().BoolVar(&opts.all, "all", false, "Fetch all available repositories")
 	opts.AddFormatFlag(cmd.Flags())
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 

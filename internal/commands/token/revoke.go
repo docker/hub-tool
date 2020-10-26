@@ -42,9 +42,10 @@ type revokeOptions struct {
 func newRevokeCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts revokeOptions
 	cmd := &cobra.Command{
-		Use:   revokeName + " [OPTIONS] TOKEN_UUID",
-		Short: "Revoke a Personal Access Token",
-		Args:  cli.ExactArgs(1),
+		Use:                   revokeName + " [OPTIONS] TOKEN_UUID",
+		Short:                 "Revoke a Personal Access Token",
+		Args:                  cli.ExactArgs(1),
+		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, revokeName)
 		},
@@ -53,7 +54,6 @@ func newRevokeCmd(streams command.Streams, hubClient *hub.Client, parent string)
 		},
 	}
 	cmd.Flags().BoolVar(&opts.force, "force", false, "Force deletion of the tag")
-	cmd.Flags().SetInterspersed(false)
 	return cmd
 }
 
