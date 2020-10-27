@@ -40,7 +40,6 @@ type Tag struct {
 	LastUpdated         time.Time
 	LastUpdaterUserName string
 	Images              []Image
-	Expires             time.Time
 	LastPulled          time.Time
 	LastPushed          time.Time
 	Status              string
@@ -53,7 +52,6 @@ type Image struct {
 	Os           string
 	Variant      string
 	Size         int
-	Expires      time.Time
 	LastPulled   time.Time
 	LastPushed   time.Time
 	Status       string
@@ -126,7 +124,6 @@ func (c *Client) getTagsPage(url, repository string, reqOps ...RequestOp) ([]Tag
 			Status:              result.Status,
 			LastPulled:          result.LastPulled,
 			LastPushed:          result.LastPushed,
-			Expires:             result.Expires,
 		}
 		tags = append(tags, tag)
 	}
@@ -152,27 +149,23 @@ type hubTagResult struct {
 	Repository          int           `json:"repository"`
 	FullSize            int           `json:"full_size"`
 	V2                  bool          `json:"v2"`
-	// New API
-	Expires    time.Time `json:"tag_expires,omitempty"`
-	LastPulled time.Time `json:"tag_last_pulled,omitempty"`
-	LastPushed time.Time `json:"tag_last_pushed,omitempty"`
-	Status     string    `json:"tag_status,omitempty"`
+	LastPulled          time.Time     `json:"tag_last_pulled,omitempty"`
+	LastPushed          time.Time     `json:"tag_last_pushed,omitempty"`
+	Status              string        `json:"tag_status,omitempty"`
 }
 
 type hubTagImage struct {
-	Architecture string `json:"architecture"`
-	Os           string `json:"os"`
-	Features     string `json:"features,omitempty"`
-	Variant      string `json:"variant,omitempty"`
-	Digest       string `json:"digest"`
-	OsFeatures   string `json:"os_features,omitempty"`
-	OsVersion    string `json:"os_version,omitempty"`
-	Size         int    `json:"size"`
-	// New API
-	Expires    time.Time `json:"expires,omitempty"`
-	LastPulled time.Time `json:"last_pulled,omitempty"`
-	LastPushed time.Time `json:"last_pushed,omitempty"`
-	Status     string    `json:"status,omitempty"`
+	Architecture string    `json:"architecture"`
+	Os           string    `json:"os"`
+	Features     string    `json:"features,omitempty"`
+	Variant      string    `json:"variant,omitempty"`
+	Digest       string    `json:"digest"`
+	OsFeatures   string    `json:"os_features,omitempty"`
+	OsVersion    string    `json:"os_version,omitempty"`
+	Size         int       `json:"size"`
+	LastPulled   time.Time `json:"last_pulled,omitempty"`
+	LastPushed   time.Time `json:"last_pushed,omitempty"`
+	Status       string    `json:"status,omitempty"`
 }
 
 func getRepoPath(s string) (string, error) {
@@ -195,7 +188,6 @@ func toImages(result []hubTagImage) []Image {
 			Variant:      result[i].Variant,
 			Size:         result[i].Size,
 			Status:       result[i].Status,
-			Expires:      result[i].Expires,
 			LastPulled:   result[i].LastPulled,
 			LastPushed:   result[i].LastPushed,
 		}
