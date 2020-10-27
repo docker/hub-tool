@@ -68,12 +68,12 @@ func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, image
 	}
 
 	if !opts.force {
-		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your repository to confirm deletion:"), namedTaggedRef.Name())
+		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your tag to confirm deletion:"), namedTaggedRef.String())
 		reader := bufio.NewReader(streams.In())
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
-		if input != namedTaggedRef.Name() {
-			return fmt.Errorf("%q differs from your repository name, deletion aborted", input)
+		if input != namedTaggedRef.String() {
+			return fmt.Errorf("%q differs from your tag name, deletion aborted", input)
 		}
 	}
 
