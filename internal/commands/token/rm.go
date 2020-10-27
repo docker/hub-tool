@@ -32,32 +32,32 @@ import (
 )
 
 const (
-	revokeName = "revoke"
+	removeNAme = "rm"
 )
 
-type revokeOptions struct {
+type removeOptions struct {
 	force bool
 }
 
-func newRevokeCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
-	var opts revokeOptions
+func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
+	var opts removeOptions
 	cmd := &cobra.Command{
-		Use:                   revokeName + " [OPTIONS] TOKEN_UUID",
-		Short:                 "Revoke a Personal Access Token",
+		Use:                   removeNAme + " [OPTIONS] TOKEN_UUID",
+		Short:                 "Delete a Personal Access Token",
 		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			metrics.Send(parent, revokeName)
+			metrics.Send(parent, removeNAme)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runRevoke(streams, hubClient, opts, args[0])
+			return runRemove(streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Force deletion of the tag")
 	return cmd
 }
 
-func runRevoke(streams command.Streams, hubClient *hub.Client, opts revokeOptions, tokenUUID string) error {
+func runRemove(streams command.Streams, hubClient *hub.Client, opts removeOptions, tokenUUID string) error {
 	u, err := uuid.Parse(tokenUUID)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func runRevoke(streams command.Streams, hubClient *hub.Client, opts revokeOption
 	if !opts.force {
 		fmt.Fprintf(streams.Out(), ansi.Warn("WARNING: This action is irreversible.")+`
 By confirming, you will permanently delete the access token.
-Revoking a token will invalidate your credentials on all Docker clients currently authenticated with this token.
+Deleting a token will invalidate your credentials on all Docker clients currently authenticated with this token.
 
 Please type your username %q to confirm deletion: `, hubClient.AuthConfig.Username)
 		reader := bufio.NewReader(streams.In())
@@ -77,9 +77,9 @@ Please type your username %q to confirm deletion: `, hubClient.AuthConfig.Userna
 		}
 	}
 
-	if err := hubClient.RevokeToken(u.String()); err != nil {
+	if err := hubClient.RemoveToken(u.String()); err != nil {
 		return err
 	}
-	fmt.Fprintln(streams.Out(), ansi.Emphasise("Revoked"), u)
+	fmt.Fprintln(streams.Out(), ansi.Emphasise("Deleted"), u)
 	return nil
 }

@@ -150,8 +150,8 @@ func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Tok
 	return &token, nil
 }
 
-//RevokeToken revoke a token from personal access token
-func (c *Client) RevokeToken(tokenUUID string) error {
+//RemoveToken deletes a token from personal access token
+func (c *Client) RemoveToken(tokenUUID string) error {
 	//DELETE https://hub.docker.com/v2/api_tokens/8208674e-d08a-426f-b6f4-e3aba7058459 => 202
 	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
 	if err != nil {
