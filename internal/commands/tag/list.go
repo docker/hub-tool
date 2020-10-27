@@ -35,10 +35,7 @@ import (
 )
 
 const (
-	lsName       = "ls"
-	callToAction = `You are currently on a free plan so your images may expire.
-Images do not expire on Pro and Team plans, to find out more https://short/link
-`
+	lsName = "ls"
 )
 
 var (
@@ -52,13 +49,6 @@ var (
 		}},
 		{"STATUS", func(t hub.Tag) (string, int) {
 			return t.Status, len(t.Status)
-		}},
-		{"EXPIRES", func(t hub.Tag) (string, int) {
-			if t.Expires.Nanosecond() == 0 {
-				return "", 0
-			}
-			s := units.HumanDuration(time.Until(t.Expires))
-			return s, len(s)
 		}},
 		{"LAST UPDATE", func(t hub.Tag) (string, int) {
 			if t.LastUpdated.Nanosecond() == 0 {
@@ -153,9 +143,6 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 			return err
 		}
 	}
-	if err := promptCallToAction(streams.Err(), hubClient); err != nil {
-		fmt.Fprint(streams.Err(), err)
-	}
 
 	var reqOps []hub.RequestOp
 	if ordering != "" {
@@ -232,26 +219,4 @@ func mapOrdering(order string) (string, error) {
 	default:
 		return "", fmt.Errorf(`unknown sorting column %q: should be either "name" or "updated"`, fields[0])
 	}
-}
-
-type accountInfo interface {
-	GetUserInfo() (*hub.User, error)
-	GetHubPlan(string) (*hub.Plan, error)
-}
-
-func promptCallToAction(out io.Writer, client accountInfo) error {
-	user, err := client.GetUserInfo()
-	if err != nil {
-		return err
-	}
-	plan, err := client.GetHubPlan(user.ID)
-	if err != nil {
-		return err
-	}
-	if plan.Name != hub.FreePlan {
-		return nil
-	}
-
-	_, err = fmt.Fprint(out, ansi.Info(callToAction))
-	return err
 }
