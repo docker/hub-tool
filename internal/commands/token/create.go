@@ -86,7 +86,7 @@ To use the access token from your Docker CLI client:
 
     %s
 
-`+ansi.Warn(`WARNING: This access token will only be displayed once.
+`+ansi.Warn(`WARNING: This access token cannot be displayed again.
 It will not be stored and cannot be retrieved. Please be sure to save it now.
 `),
 			helper.Description,
