@@ -60,6 +60,8 @@ func (c *Client) GetHubPlan(accountID string) (*Plan, error) {
 	if err != nil {
 		return nil, err
 	}
+	//fa0a8c79-682b-4772-90b0-07fb58c95cad
+	fmt.Println(c.token)
 	response, err := c.doRequest(req, WithHubToken(c.token))
 	if err != nil {
 		return nil, err

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/docker/hub-tool/internal/hub"
 	"github.com/spf13/pflag"
 )
 
@@ -41,6 +42,17 @@ func (o *Option) AddFormatFlag(flags *pflag.FlagSet) {
 func (o *Option) Print(out io.Writer, values interface{}, prettyPrinter PrettyPrinter) error {
 	switch o.format {
 	case "":
+		if s, ok := values.(hub.Stream); ok {
+			for {
+				res, err := s.Recv()
+				if err == hub.EOS {
+					return nil
+				}
+				if err := prettyPrinter(out, res); err != nil {
+					return err
+				}
+			}
+		}
 		return prettyPrinter(out, values)
 	case "json":
 		return printJSON(out, values)
