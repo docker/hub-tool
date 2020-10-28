@@ -32,7 +32,7 @@ var (
 	hub = Instance{
 		APIHubBaseURL: "https://hub.docker.com",
 		RegistryInfo: &registry.IndexInfo{
-			Name:     "registry.docker.io",
+			Name:     "registry-1.docker.io",
 			Mirrors:  nil,
 			Secure:   true,
 			Official: true,
