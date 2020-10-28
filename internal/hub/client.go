@@ -35,7 +35,7 @@ const (
 	// LoginURL path to the Hub login URL
 	LoginURL = "/v2/users/login"
 
-	itemsPerPage = 25
+	itemsPerPage = 100
 )
 
 //Client sends authenticated calls to the Hub API
