@@ -43,7 +43,7 @@ var (
 // getInstance returns the current hub instance, which can be overridden by
 // DOCKER_REGISTRY_URL and DOCKER_REGISTRY_URL env var
 func getInstance() *Instance {
-	apiBaseURL := os.Getenv("DOCKER_REGISTRY_URL")
+	apiBaseURL := os.Getenv("DOCKER_HUB_API_URL")
 	reg := os.Getenv("DOCKER_REGISTRY_URL")
 
 	if apiBaseURL != "" && reg != "" {
