@@ -69,7 +69,7 @@ package-cross: cross ## Package the cross compiled binaries in tarballs for *nix
 
 .PHONY: install
 install: build ## Install the tool to your /usr/local/bin/
-	cp bin/$(PLATFORM_BINARY) /usr/local/bin/$(BINARY)
+	cp bin/$(BINARY_NAME) /usr/local/bin/$(BINARY)
 
 .PHONY: test ## Run unit tests then end-to-end tests
 test: test-unit e2e
