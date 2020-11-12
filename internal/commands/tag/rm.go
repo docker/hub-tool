@@ -58,26 +58,27 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 }
 
 func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, image string) error {
-	ref, err := reference.Parse(image)
+	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return err
 	}
+	ref = reference.TagNameOnly(ref)
 	namedTaggedRef, ok := ref.(reference.NamedTagged)
 	if !ok {
 		return fmt.Errorf("invalid reference: tag must be specified")
 	}
 
 	if !opts.force {
-		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your tag to confirm deletion:"), namedTaggedRef.String())
+		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your tag to confirm deletion:"), reference.FamiliarString(namedTaggedRef))
 		reader := bufio.NewReader(streams.In())
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
-		if input != namedTaggedRef.String() {
+		if input != reference.FamiliarString(namedTaggedRef) {
 			return fmt.Errorf("%q differs from your tag name, deletion aborted", input)
 		}
 	}
 
-	if err := hubClient.RemoveTag(namedTaggedRef.Name(), namedTaggedRef.Tag()); err != nil {
+	if err := hubClient.RemoveTag(reference.FamiliarName(namedTaggedRef), namedTaggedRef.Tag()); err != nil {
 		return err
 	}
 	fmt.Fprintln(streams.Out(), "Deleted", image)
