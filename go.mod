@@ -25,6 +25,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.3 // indirect
 	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/opencontainers/image-spec v1.0.1
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
