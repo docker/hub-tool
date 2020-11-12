@@ -18,12 +18,14 @@ package tag
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/distribution/reference"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
@@ -49,15 +51,15 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, rmName)
 		},
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runRm(streams, hubClient, opts, args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRm(cmd.Context(), streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Force deletion of the tag")
 	return cmd
 }
 
-func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, image string) error {
+func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, opts rmOptions, image string) error {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return err
@@ -70,9 +72,18 @@ func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, image
 
 	if !opts.force {
 		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your tag to confirm deletion:"), reference.FamiliarString(namedTaggedRef))
-		reader := bufio.NewReader(streams.In())
-		input, _ := reader.ReadString('\n')
-		input = strings.ToLower(strings.TrimSpace(input))
+		userIn := make(chan string, 1)
+		go func() {
+			reader := bufio.NewReader(streams.In())
+			input, _ := reader.ReadString('\n')
+			userIn <- strings.ToLower(strings.TrimSpace(input))
+		}()
+		input := ""
+		select {
+		case <-ctx.Done():
+			return errors.New("canceled")
+		case input = <-userIn:
+		}
 		if input != reference.FamiliarString(namedTaggedRef) {
 			return fmt.Errorf("%q differs from your tag name, deletion aborted", input)
 		}
