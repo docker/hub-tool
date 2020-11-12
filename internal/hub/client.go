@@ -181,9 +181,13 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		if err == nil {
 			var body map[string]string
 			if err := json.Unmarshal(buf, &body); err == nil {
-				if msg, ok := body["message"]; ok {
-					return nil, fmt.Errorf("bad status code %q: %s", resp.Status, msg)
+				for _, k := range []string{"message", "detail"} {
+					if msg, ok := body[k]; ok {
+						return nil, fmt.Errorf("bad status code %q: %s", resp.Status, msg)
+					}
 				}
+				// If not in our key list, print the whole JSON body
+				return nil, fmt.Errorf("bad status code %q: %s", resp.Status, buf)
 			}
 		}
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
