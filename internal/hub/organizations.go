@@ -76,7 +76,7 @@ func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organi
 		return nil, "", err
 	}
 	req = req.WithContext(ctx)
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, "", err
 	}

@@ -45,6 +45,9 @@ func newUpdateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 		Short:                 "Update a Personal Access Token",
 		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
+		Annotations: map[string]string{
+			"sudo": "true",
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, updateName)
 		},

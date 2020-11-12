@@ -76,6 +76,9 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 		Short:                 "List all the Personal Access Tokens",
 		Args:                  cli.NoArgs,
 		DisableFlagsInUseLine: true,
+		Annotations: map[string]string{
+			"sudo": "true",
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, lsName)
 		},
@@ -90,7 +93,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 
 func runList(streams command.Streams, hubClient *hub.Client, opts listOptions) error {
 	if opts.all {
-		if err := hubClient.Apply(hub.WithAllElements()); err != nil {
+		if err := hubClient.Update(hub.WithAllElements()); err != nil {
 			return err
 		}
 	}

@@ -21,12 +21,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker/hub-tool/internal"
@@ -34,7 +34,11 @@ import (
 
 const (
 	// LoginURL path to the Hub login URL
-	LoginURL = "/v2/users/login"
+	LoginURL = "/v2/users/login?refresh_token=true"
+	// TwoFactorLoginURL path to the 2FA
+	TwoFactorLoginURL = "/v2/users/2fa-login?refresh_token=true"
+	// SecondFactorDetailMessage returned by login if 2FA is enabled
+	SecondFactorDetailMessage = "Require secondary authentication on MFA enabled account"
 
 	itemsPerPage = 100
 )
@@ -46,11 +50,27 @@ type Client struct {
 
 	domain           string
 	token            string
+	account          string
 	fetchAllElements bool
+	in               io.Reader
+	out              io.Writer
 }
 
-//AuthResolver resolves authentication configuration depending the registry
-type AuthResolver func(*registry.IndexInfo) types.AuthConfig
+type twoFactorResponse struct {
+	Detail        string `json:"detail"`
+	Login2FAToken string `json:"login_2fa_token"`
+}
+
+type twoFactorRequest struct {
+	Code          string `json:"code"`
+	Login2FAToken string `json:"login_2fa_token"`
+}
+
+type tokenResponse struct {
+	Detail       string `json:"detail"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+}
 
 //ClientOp represents an option given to NewClient constructor to customize client behavior.
 type ClientOp func(*Client) error
@@ -60,32 +80,23 @@ type RequestOp func(r *http.Request) error
 
 //NewClient logs the user to the hub and returns a client which can send authenticated requests
 // to the Hub API
-func NewClient(authResolver AuthResolver, ops ...ClientOp) (*Client, error) {
+func NewClient(ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
-	hubAuthConfig := authResolver(hubInstance.RegistryInfo)
-	// Check if the user is logged in
-	if hubAuthConfig.Username == "" {
-		return nil, &authenticationError{}
-	}
+
 	client := &Client{
-		AuthConfig: hubAuthConfig,
-		domain:     hubInstance.APIHubBaseURL,
+		domain: hubInstance.APIHubBaseURL,
 	}
 	for _, op := range ops {
 		if err := op(client); err != nil {
 			return nil, err
 		}
 	}
-	token, err := client.login(hubInstance.APIHubBaseURL, hubAuthConfig)
-	if err != nil {
-		return nil, err
-	}
-	client.token = token
+
 	return client, nil
 }
 
-//Apply changes client behavior using ClientOp
-func (c *Client) Apply(ops ...ClientOp) error {
+//Update changes client behavior using ClientOp
+func (c *Client) Update(ops ...ClientOp) error {
 	for _, op := range ops {
 		if err := op(c); err != nil {
 			return err
@@ -110,8 +121,39 @@ func WithContext(ctx context.Context) ClientOp {
 	}
 }
 
-//WithHubToken sets the bearer token to the request
-func WithHubToken(token string) RequestOp {
+//WithInStream sets the input stream
+func WithInStream(in io.Reader) ClientOp {
+	return func(c *Client) error {
+		c.in = in
+		return nil
+	}
+}
+
+//WithOutStream sets the output stream
+func WithOutStream(out io.Writer) ClientOp {
+	return func(c *Client) error {
+		c.out = out
+		return nil
+	}
+}
+
+// WithHubAccount sets the current account name
+func WithHubAccount(account string) ClientOp {
+	return func(c *Client) error {
+		c.account = account
+		return nil
+	}
+}
+
+// WithHubToken sets the bearer token to the client
+func WithHubToken(token string) ClientOp {
+	return func(c *Client) error {
+		c.token = token
+		return nil
+	}
+}
+
+func withHubToken(token string) RequestOp {
 	return func(req *http.Request) error {
 		req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", token)}
 		return nil
@@ -131,48 +173,107 @@ func WithSortingOrder(order string) RequestOp {
 	}
 }
 
-func (c *Client) login(hubBaseURL string, hubAuthConfig types.AuthConfig) (string, error) {
-	data, err := json.Marshal(hubAuthConfig)
+// Login tries to authenticate, it will call the twoFactorCodeProvider if the
+// user has 2FA activated
+func (c *Client) Login(username string, password string, twoFactorCodeProvider func() (string, error)) (string, string, error) {
+	data, err := json.Marshal(types.AuthConfig{
+		Username: username,
+		Password: password,
+	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	body := bytes.NewBuffer(data)
 
 	// Login on the Docker Hub
-	req, err := http.NewRequest("POST", hubBaseURL+LoginURL, ioutil.NopCloser(body))
+	req, err := http.NewRequest("POST", c.domain+LoginURL, ioutil.NopCloser(body))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	req.Header["Content-Type"] = []string{"application/json"}
-	buf, err := c.doRequest(req)
+	resp, err := c.doRawRequest(req)
 	if err != nil {
-		return "", err
+		return "", "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
 	}
 
-	creds := struct {
-		Token string `json:"token"`
-	}{}
-	if err := json.Unmarshal(buf, &creds); err != nil {
-		return "", err
+	// Login is OK, return the token
+	if resp.StatusCode == http.StatusOK {
+		creds := tokenResponse{}
+		if err := json.Unmarshal(buf, &creds); err != nil {
+			return "", "", err
+		}
+		return creds.Token, password, nil
+	} else if resp.StatusCode == http.StatusUnauthorized {
+		response2FA := twoFactorResponse{}
+		if err := json.Unmarshal(buf, &response2FA); err != nil {
+			return "", "", err
+		}
+		// Check if 2FA is enabled and needs a second authentication
+		if response2FA.Detail != SecondFactorDetailMessage {
+			return "", "", fmt.Errorf(response2FA.Detail)
+		}
+		return c.getTwoFactorToken(response2FA.Login2FAToken, twoFactorCodeProvider)
 	}
-	return creds.Token, nil
+	if ok, err := extractError(buf, resp); ok {
+		return "", "", err
+	}
+	return "", "", fmt.Errorf("failed to authenticate: bad status code %q: %s", resp.Status, string(buf))
+}
+
+func (c *Client) getTwoFactorToken(token string, twoFactorCodeProvider func() (string, error)) (string, string, error) {
+	code, err := twoFactorCodeProvider()
+	if err != nil {
+		return "", "", err
+	}
+
+	body2FA := twoFactorRequest{
+		Code:          code,
+		Login2FAToken: token,
+	}
+	data, err := json.Marshal(body2FA)
+	if err != nil {
+		return "", "", err
+	}
+
+	body := bytes.NewBuffer(data)
+
+	// Request 2FA on the Docker Hub
+	req, err := http.NewRequest("POST", c.domain+TwoFactorLoginURL, ioutil.NopCloser(body))
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := c.doRawRequest(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Login is OK, return the token
+	if resp.StatusCode == http.StatusOK {
+		creds := tokenResponse{}
+		if err := json.Unmarshal(buf, &creds); err != nil {
+			return "", "", err
+		}
+
+		return creds.Token, creds.RefreshToken, nil
+	}
+
+	return "", "", fmt.Errorf("failed to authenticate: bad status code %q: %s", resp.Status, string(buf))
 }
 
 func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, error) {
-	req.Header["Accept"] = []string{"application/json"}
-	req.Header["Content-Type"] = []string{"application/json"}
-	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
-	for _, op := range reqOps {
-		if err := op(req); err != nil {
-			return nil, err
-		}
-	}
-	if c.Ctx != nil {
-		req = req.WithContext(c.Ctx)
-	}
 	log.Debugf("HTTP %s on: %s", req.Method, req.URL)
 	log.Tracef("HTTP request: %+v", req)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.doRawRequest(req, reqOps...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,13 +285,8 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		buf, err := ioutil.ReadAll(resp.Body)
 		log.Debugf("bad status code %q: %s", resp.Status, buf)
 		if err == nil {
-			var body map[string]string
-			if err := json.Unmarshal(buf, &body); err == nil {
-				for _, k := range []string{"message", "detail"} {
-					if msg, ok := body[k]; ok {
-						return nil, fmt.Errorf("bad status code %q: %s", resp.Status, msg)
-					}
-				}
+			if ok, err := extractError(buf, resp); ok {
+				return nil, err
 			}
 		}
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
@@ -200,5 +296,36 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("bad status code %q: %s", resp.Status, string(buf))
+	}
+
 	return buf, nil
+}
+
+func (c *Client) doRawRequest(req *http.Request, reqOps ...RequestOp) (*http.Response, error) {
+	req.Header["Accept"] = []string{"application/json"}
+	req.Header["Content-Type"] = []string{"application/json"}
+	req.Header["User-Agent"] = []string{fmt.Sprintf("hub-tool/%s", internal.Version)}
+	for _, op := range reqOps {
+		if err := op(req); err != nil {
+			return nil, err
+		}
+	}
+	if c.Ctx != nil {
+		req = req.WithContext(c.Ctx)
+	}
+	return http.DefaultClient.Do(req)
+}
+
+func extractError(buf []byte, resp *http.Response) (bool, error) {
+	var responseBody map[string]string
+	if err := json.Unmarshal(buf, &responseBody); err == nil {
+		for _, k := range []string{"message", "detail"} {
+			if msg, ok := responseBody[k]; ok {
+				return true, fmt.Errorf("failed to authenticate: bad status code %q: %s", resp.Status, msg)
+			}
+		}
+	}
+	return false, nil
 }

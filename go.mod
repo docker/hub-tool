@@ -30,6 +30,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	gopkg.in/square/go-jose.v2 v2.5.1
 	gotest.tools v2.2.0+incompatible
 	gotest.tools/v3 v3.0.2
 )
