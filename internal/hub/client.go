@@ -177,6 +177,15 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		defer resp.Body.Close() //nolint:errcheck
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		buf, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			var body map[string]string
+			if err := json.Unmarshal(buf, &body); err == nil {
+				if msg, ok := body["message"]; ok {
+					return nil, fmt.Errorf("bad status code %q: %s", resp.Status, msg)
+				}
+			}
+		}
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
