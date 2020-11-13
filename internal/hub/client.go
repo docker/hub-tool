@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/docker/hub-tool/internal"
 )
@@ -169,6 +170,8 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 	if c.Ctx != nil {
 		req = req.WithContext(c.Ctx)
 	}
+	log.Debugf("HTTP %s on: %s", req.Method, req.URL)
+	log.Tracef("HTTP request: %+v", req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -176,8 +179,10 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 	if resp.Body != nil {
 		defer resp.Body.Close() //nolint:errcheck
 	}
+	log.Tracef("HTTP response: %+v", resp)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		buf, err := ioutil.ReadAll(resp.Body)
+		log.Debugf("bad status code %q: %s", resp.Status, buf)
 		if err == nil {
 			var body map[string]string
 			if err := json.Unmarshal(buf, &body); err == nil {
@@ -186,13 +191,12 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 						return nil, fmt.Errorf("bad status code %q: %s", resp.Status, msg)
 					}
 				}
-				// If not in our key list, print the whole JSON body
-				return nil, fmt.Errorf("bad status code %q: %s", resp.Status, buf)
 			}
 		}
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
+	log.Tracef("HTTP response body: %s", buf)
 	if err != nil {
 		return nil, err
 	}
