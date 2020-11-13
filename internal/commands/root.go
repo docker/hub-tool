@@ -21,6 +21,7 @@ import (
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal"
@@ -34,6 +35,8 @@ import (
 
 type options struct {
 	showVersion bool
+	trace       bool
+	verbose     bool
 }
 
 //NewRootCmd returns the main command
@@ -46,6 +49,14 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 		Annotations:           map[string]string{},
 		SilenceUsage:          true,
 		DisableFlagsInUseLine: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if flags.trace {
+				log.SetLevel(log.TraceLevel)
+			} else if flags.verbose {
+				log.SetLevel(log.DebugLevel)
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
 				fmt.Fprintf(streams.Out(), "Docker Hub Tool %s, build %s\n", internal.Version, internal.GitCommit[:7])
@@ -55,6 +66,9 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 		},
 	}
 	cmd.Flags().BoolVar(&flags.showVersion, "version", false, "Display the version of this tool")
+	cmd.PersistentFlags().BoolVar(&flags.verbose, "verbose", false, "Print logs")
+	cmd.PersistentFlags().BoolVar(&flags.trace, "trace", false, "Print trace logs")
+	_ = cmd.PersistentFlags().MarkHidden("trace")
 
 	cmd.AddCommand(
 		account.NewAccountCmd(streams, hubClient),
