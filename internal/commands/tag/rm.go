@@ -60,18 +60,20 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 }
 
 func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, opts rmOptions, image string) error {
-	ref, err := reference.ParseNormalizedNamed(image)
+	normRef, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return err
 	}
-	ref = reference.TagNameOnly(ref)
-	namedTaggedRef, ok := ref.(reference.NamedTagged)
+	normRef = reference.TagNameOnly(normRef)
+	ref, ok := normRef.(reference.NamedTagged)
 	if !ok {
 		return fmt.Errorf("invalid reference: tag must be specified")
 	}
 
 	if !opts.force {
-		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your tag to confirm deletion:"), reference.FamiliarString(namedTaggedRef))
+		fmt.Fprintln(streams.Out(), ansi.Warn(fmt.Sprintf(`WARNING: You are about to permanently delete image "%s:%s"`, reference.FamiliarName(ref), ref.Tag())))
+		fmt.Fprintln(streams.Out(), ansi.Warn("         This action is irreversible"))
+		fmt.Fprintf(streams.Out(), "Are you sure you want to delete the image tagged %q from repository %q? [y/N]", ref.Tag(), reference.FamiliarName(ref))
 		userIn := make(chan string, 1)
 		go func() {
 			reader := bufio.NewReader(streams.In())
@@ -84,12 +86,12 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 			return errors.New("canceled")
 		case input = <-userIn:
 		}
-		if input != reference.FamiliarString(namedTaggedRef) {
-			return fmt.Errorf("%q differs from your tag name, deletion aborted", input)
+		if strings.ToLower(input) != "y" {
+			return errors.New("deletion aborted")
 		}
 	}
 
-	if err := hubClient.RemoveTag(reference.FamiliarName(namedTaggedRef), namedTaggedRef.Tag()); err != nil {
+	if err := hubClient.RemoveTag(reference.FamiliarName(ref), ref.Tag()); err != nil {
 		return err
 	}
 	fmt.Fprintln(streams.Out(), "Deleted", image)
