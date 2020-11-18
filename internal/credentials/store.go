@@ -36,6 +36,7 @@ const (
 type Store interface {
 	GetAuth() (*Auth, error)
 	Store(auth Auth) error
+	Erase() error
 }
 
 // Auth represents user authentication
@@ -121,4 +122,11 @@ func (s *store) Store(auth Auth) error {
 		Password:      auth.Password,
 		ServerAddress: hubToolKey,
 	})
+}
+
+func (s *store) Erase() error {
+	if err := s.s.Erase(hubToolKey); err != nil {
+		return err
+	}
+	return s.s.Erase(hubToolTokenKey)
 }

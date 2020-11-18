@@ -117,6 +117,7 @@ Please login to Docker Hub using the "hub-tool login" command.`))
 
 	cmd.AddCommand(
 		newLoginCmd(streams, store, hubClient),
+		newLogoutCmd(store),
 		account.NewAccountCmd(streams, hubClient),
 		token.NewTokenCmd(streams, hubClient),
 		org.NewOrgCmd(streams, hubClient),

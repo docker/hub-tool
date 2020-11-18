@@ -16,4 +16,35 @@
 
 package commands
 
-// TODO: Implement the logout command
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"github.com/docker/hub-tool/internal/ansi"
+	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/internal/metrics"
+)
+
+const (
+	logoutName = "logout"
+)
+
+func newLogoutCmd(store credentials.Store) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                   logoutName + " USERNAME",
+		Short:                 "Logout of the Hub",
+		DisableFlagsInUseLine: true,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send("root", logoutName)
+		},
+		RunE: func(_ *cobra.Command, args []string) error {
+			if err := store.Erase(); err != nil {
+				return err
+			}
+			fmt.Println(ansi.Info("Logout Succeeded"))
+			return nil
+		},
+	}
+	return cmd
+}
