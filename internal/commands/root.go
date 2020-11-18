@@ -18,6 +18,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
@@ -25,12 +26,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal"
+	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/commands/account"
 	"github.com/docker/hub-tool/internal/commands/org"
 	"github.com/docker/hub-tool/internal/commands/repo"
 	"github.com/docker/hub-tool/internal/commands/tag"
 	"github.com/docker/hub-tool/internal/commands/token"
+	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/internal/login"
 )
 
 type options struct {
@@ -39,8 +43,12 @@ type options struct {
 	verbose     bool
 }
 
-//NewRootCmd returns the main command
-func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *cobra.Command {
+var (
+	anonCmds = []string{"version", "help", "login"}
+)
+
+// NewRootCmd returns the main command
+func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credentials.Store, name string) *cobra.Command {
 	var flags options
 	cmd := &cobra.Command{
 		Use:                   name,
@@ -55,6 +63,45 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 			} else if flags.verbose {
 				log.SetLevel(log.DebugLevel)
 			}
+			if flags.showVersion {
+				return nil
+			}
+			if contains(anonCmds, cmd.Name()) {
+				return nil
+			}
+
+			if cmd.Annotations["sudo"] == "true" {
+				ac, err := store.GetAuth()
+				if err != nil {
+					return err
+				}
+				if ac.TokenExpired() {
+					return login.RunLogin(streams, hubClient, store, ac.Username)
+				}
+				return nil
+			}
+
+			ac, err := store.GetAuth()
+			if err != nil || ac.Username == "" {
+				fmt.Println(ansi.Error(`You need to be logged in to Docker Hub to use this tool.
+Please login to Docker Hub using the "hub-tool login" command.`))
+				os.Exit(1)
+			}
+			if ac.TokenExpired() {
+				t, p, err := hubClient.Login(ac.Username, ac.Password, func() (string, error) {
+					return "", nil
+				})
+				if err != nil {
+					return err
+				}
+
+				return store.Store(credentials.Auth{
+					Username: ac.Username,
+					Password: p,
+					Token:    t,
+				})
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -71,6 +118,7 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 	_ = cmd.PersistentFlags().MarkHidden("trace")
 
 	cmd.AddCommand(
+		newLoginCmd(streams, store, hubClient),
 		account.NewAccountCmd(streams, hubClient),
 		token.NewTokenCmd(streams, hubClient),
 		org.NewOrgCmd(streams, hubClient),
@@ -79,6 +127,15 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, name string) *co
 		newVersionCmd(streams),
 	)
 	return cmd
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, v := range haystack {
+		if needle == v {
+			return true
+		}
+	}
+	return false
 }
 
 func newVersionCmd(streams command.Streams) *cobra.Command {

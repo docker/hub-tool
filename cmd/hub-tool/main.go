@@ -19,17 +19,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/docker/cli/cli/command"
+	dockercredentials "github.com/docker/cli/cli/config/credentials"
 	cliflags "github.com/docker/cli/cli/flags"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
 
-	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/commands"
+	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/hub"
 )
 
@@ -44,25 +44,29 @@ func main() {
 	}
 	opts := cliflags.NewClientOptions()
 	if err := dockerCli.Initialize(opts); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	authResolver := func(hub *registry.IndexInfo) types.AuthConfig {
-		return command.ResolveAuthConfig(ctx, dockerCli, hub)
+		log.Fatal(err)
 	}
 
-	hubClient, err := hub.NewClient(authResolver, hub.WithContext(ctx))
+	store := credentials.NewStore(func(key string) dockercredentials.Store {
+		config := dockerCli.ConfigFile()
+		return config.GetCredentialsStore(key)
+	})
+	auth, err := store.GetAuth()
 	if err != nil {
-		if hub.IsAuthenticationError(err) {
-			fmt.Println(ansi.Error(`You need to be logged in to Docker Hub to use this tool.
-Please login to Docker Hub using the "docker login" command.`))
-			os.Exit(1)
-		}
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
-	rootCmd := commands.NewRootCmd(dockerCli, hubClient, os.Args[0])
+	hubClient, err := hub.NewClient(
+		hub.WithContext(ctx),
+		hub.WithInStream(dockerCli.In()),
+		hub.WithOutStream(dockerCli.Out()),
+		hub.WithHubAccount(auth.Username),
+		hub.WithHubToken(auth.Token))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rootCmd := commands.NewRootCmd(dockerCli, hubClient, store, os.Args[0])
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}

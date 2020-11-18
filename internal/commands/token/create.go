@@ -47,6 +47,9 @@ func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 		Short:                 "Create a Personal Access Token",
 		Args:                  cli.NoArgs,
 		DisableFlagsInUseLine: true,
+		Annotations: map[string]string{
+			"sudo": "true",
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, createName)
 		},

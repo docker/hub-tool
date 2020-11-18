@@ -28,13 +28,16 @@ const (
 	tokenName = "token"
 )
 
-//NewTokenCmd configures the token manage command
+// NewTokenCmd configures the token manage command
 func NewTokenCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   tokenName,
 		Short: "Manage Personal Access Tokens",
 		Args:  cli.NoArgs,
 		RunE:  command.ShowHelp(streams.Err()),
+		Annotations: map[string]string{
+			"sudo": "true",
+		},
 	}
 	cmd.AddCommand(
 		newCreateCmd(streams, hubClient, tokenName),

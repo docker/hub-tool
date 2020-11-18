@@ -43,6 +43,9 @@ type Repository struct {
 
 //GetRepositories lists all the repositories a user can access
 func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
+	if account == "" {
+		account = c.account
+	}
 	u, err := url.Parse(c.domain + fmt.Sprintf(RepositoriesURL, account))
 	if err != nil {
 		return nil, 0, err
@@ -78,7 +81,7 @@ func (c *Client) RemoveRepository(repository string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.doRequest(req, WithHubToken(c.token))
+	_, err = c.doRequest(req, withHubToken(c.token))
 	return err
 }
 
@@ -87,7 +90,7 @@ func (c *Client) getRepositoriesPage(url, account string) ([]Repository, int, st
 	if err != nil {
 		return nil, 0, "", err
 	}
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, 0, "", err
 	}

@@ -47,6 +47,9 @@ func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 		Short:                 "Print the account information",
 		Args:                  cli.NoArgs,
 		DisableFlagsInUseLine: true,
+		Annotations: map[string]string{
+			"sudo": "true",
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, infoName)
 		},

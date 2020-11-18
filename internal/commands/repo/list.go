@@ -97,7 +97,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, args []string) error {
 	account := hubClient.AuthConfig.Username
 	if opts.all {
-		if err := hubClient.Apply(hub.WithAllElements()); err != nil {
+		if err := hubClient.Update(hub.WithAllElements()); err != nil {
 			return err
 		}
 	}

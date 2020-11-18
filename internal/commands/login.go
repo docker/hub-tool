@@ -14,34 +14,42 @@
    limitations under the License.
 */
 
-package account
+package commands
 
 import (
+	"fmt"
+
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
+	"github.com/docker/hub-tool/internal/ansi"
+	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/internal/login"
+	"github.com/docker/hub-tool/internal/metrics"
 )
 
 const (
-	accountName = "account"
+	loginName = "login"
 )
 
-//NewAccountCmd configures the org manage command
-func NewAccountCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
+func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   accountName,
-		Short:                 "Manage your account",
-		Args:                  cli.NoArgs,
+		Use:                   loginName + " USERNAME",
+		Short:                 "Login to the Hub",
+		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
-		Annotations: map[string]string{
-			"sudo": "true",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metrics.Send("root", loginName)
 		},
-		RunE: command.ShowHelp(streams.Err()),
+		RunE: func(_ *cobra.Command, args []string) error {
+			if err := login.RunLogin(streams, hubClient, store, args[0]); err != nil {
+				return err
+			}
+			fmt.Println(ansi.Info("Login Succeeded"))
+			return nil
+		},
 	}
-	cmd.AddCommand(
-		newInfoCmd(streams, hubClient, accountName),
-	)
 	return cmd
 }

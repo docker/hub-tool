@@ -59,7 +59,7 @@ func (c *Client) CreateToken(description string) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (c *Client) GetToken(tokenUUID string) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Tok
 	if err != nil {
 		return nil, err
 	}
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (c *Client) RemoveToken(tokenUUID string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.doRequest(req, WithHubToken(c.token))
+	_, err = c.doRequest(req, withHubToken(c.token))
 	return err
 }
 
@@ -166,7 +166,7 @@ func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
 	if err != nil {
 		return nil, 0, "", err
 	}
-	response, err := c.doRequest(req, WithHubToken(c.token))
+	response, err := c.doRequest(req, withHubToken(c.token))
 	if err != nil {
 		return nil, 0, "", err
 	}

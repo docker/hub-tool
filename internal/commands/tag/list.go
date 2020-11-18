@@ -139,7 +139,7 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 		return err
 	}
 	if opts.all {
-		if err := hubClient.Apply(hub.WithAllElements()); err != nil {
+		if err := hubClient.Update(hub.WithAllElements()); err != nil {
 			return err
 		}
 	}
