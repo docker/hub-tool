@@ -18,6 +18,8 @@ package repo
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -49,15 +51,15 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send(parent, rmName)
 		},
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runRm(streams, hubClient, opts, args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRm(cmd.Context(), streams, hubClient, opts, args[0])
 		},
 	}
 	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Force deletion of the repository")
 	return cmd
 }
 
-func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, repository string) error {
+func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, opts rmOptions, repository string) error {
 	ref, err := reference.Parse(repository)
 	if err != nil {
 		return err
@@ -68,10 +70,25 @@ func runRm(streams command.Streams, hubClient *hub.Client, opts rmOptions, repos
 	}
 
 	if !opts.force {
-		fmt.Fprintln(streams.Out(), ansi.Warn("Please type the name of your repository to confirm deletion:"), namedRef.Name())
-		reader := bufio.NewReader(streams.In())
-		input, _ := reader.ReadString('\n')
-		input = strings.ToLower(strings.TrimSpace(input))
+		_, count, err := hubClient.GetTags(namedRef.Name())
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(streams.Out(), ansi.Warn(fmt.Sprintf("WARNING: You are about to permanently delete repository %q including %d tag(s)", namedRef.Name(), count)))
+		fmt.Fprintln(streams.Out(), ansi.Warn("         This action is irreversible"))
+		fmt.Fprintln(streams.Out(), ansi.Warn("Enter the name of the repository to confirm deletion:"), namedRef.Name())
+		userIn := make(chan string, 1)
+		go func() {
+			reader := bufio.NewReader(streams.In())
+			input, _ := reader.ReadString('\n')
+			userIn <- strings.ToLower(strings.TrimSpace(input))
+		}()
+		input := ""
+		select {
+		case <-ctx.Done():
+			return errors.New("canceled")
+		case input = <-userIn:
+		}
 		if input != namedRef.Name() {
 			return fmt.Errorf("%q differs from your repository name, deletion aborted", input)
 		}
