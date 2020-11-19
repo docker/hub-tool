@@ -18,10 +18,12 @@ package login
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/docker/cli/cli/command"
 	dockerstreams "github.com/docker/cli/cli/streams"
@@ -34,30 +36,47 @@ import (
 )
 
 // RunLogin logs the user and asks for the 2FA code if needed
-func RunLogin(streams command.Streams, hubClient *hub.Client, store credentials.Store, username string) error {
+func RunLogin(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store, username string) error {
 	password, err := readPassword(streams)
 	if err != nil {
 		return err
 	}
 
-	token, p, err := hubClient.Login(username, password, func() (string, error) {
-		fmt.Fprint(streams.Out(), ansi.Info("2FA required, please provide the 6 digit code: "))
-		reader := bufio.NewReader(streams.In())
-		return reader.ReadString('\n')
-	})
+	token, refreshToken, err := VerifyTwoFactorCode(ctx, streams, hubClient, username, password)
 	if err != nil {
 		return err
 	}
-	password = p
 
 	if err := hubClient.Update(hub.WithHubToken(token)); err != nil {
 		return err
 	}
 
 	return store.Store(credentials.Auth{
-		Username: username,
-		Password: password,
-		Token:    token,
+		Username:     username,
+		Password:     password,
+		Token:        token,
+		RefreshToken: refreshToken,
+	})
+}
+
+// VerifyTwoFactorCode run 2FA login
+func VerifyTwoFactorCode(ctx context.Context, streams command.Streams, hubClient *hub.Client, username string, password string) (string, string, error) {
+	return hubClient.Login(username, password, func() (string, error) {
+		userIn := make(chan string, 1)
+		go func() {
+			fmt.Fprint(streams.Out(), ansi.Info("2FA required, please provide the 6 digit code: "))
+			reader := bufio.NewReader(streams.In())
+			input, _ := reader.ReadString('\n')
+			userIn <- strings.TrimSpace(input)
+		}()
+		input := ""
+		select {
+		case <-ctx.Done():
+			return "", errors.New("canceled")
+		case input = <-userIn:
+		}
+
+		return input, nil
 	})
 }
 

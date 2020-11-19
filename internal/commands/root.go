@@ -17,8 +17,8 @@
 package commands
 
 import (
+	"context"
 	"fmt"
-	"os"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
@@ -71,38 +71,36 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 			}
 
 			if cmd.Annotations["sudo"] == "true" {
-				ac, err := store.GetAuth()
-				if err != nil {
-					return err
-				}
-				if ac.TokenExpired() {
-					return login.RunLogin(streams, hubClient, store, ac.Username)
-				}
-				return nil
+				return requireTwoFactorCode(cmd.Context(), streams, hubClient, store)
 			}
 
 			ac, err := store.GetAuth()
-			if err != nil || ac.Username == "" {
-				fmt.Println(ansi.Error(`You need to be logged in to Docker Hub to use this tool.
+			if err != nil {
+				return err
+			}
+
+			if ac.Username == "" {
+				log.Fatal(ansi.Error(`You need to be logged in to Docker Hub to use this tool.
 Please login to Docker Hub using the "hub-tool login" command.`))
-				os.Exit(1)
-			}
-			if ac.TokenExpired() {
-				t, p, err := hubClient.Login(ac.Username, ac.Password, func() (string, error) {
-					return "", nil
-				})
-				if err != nil {
-					return err
-				}
-
-				return store.Store(credentials.Auth{
-					Username: ac.Username,
-					Password: p,
-					Token:    t,
-				})
 			}
 
-			return nil
+			if !ac.TokenExpired() {
+				return nil
+			}
+
+			token, refreshToken, err := hubClient.Login(ac.Username, ac.Password, func() (string, error) {
+				return "", nil
+			})
+			if err != nil {
+				return err
+			}
+
+			return store.Store(credentials.Auth{
+				Username:     ac.Username,
+				Password:     ac.Password,
+				Token:        token,
+				RefreshToken: refreshToken,
+			})
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
@@ -148,4 +146,29 @@ func newVersionCmd(streams command.Streams) *cobra.Command {
 			return err
 		},
 	}
+}
+
+func requireTwoFactorCode(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store) error {
+	ac, err := store.GetAuth()
+	if err != nil {
+		return err
+	}
+	if !ac.TokenExpired() {
+		return nil
+	}
+
+	token, refreshToken, err := login.VerifyTwoFactorCode(ctx, streams, hubClient, ac.Username, ac.Password)
+	if err != nil {
+		return err
+	}
+	if err := hubClient.Update(hub.WithHubToken(token)); err != nil {
+		return err
+	}
+
+	return store.Store(credentials.Auth{
+		Username:     ac.Username,
+		Password:     ac.Password,
+		Token:        token,
+		RefreshToken: refreshToken,
+	})
 }
