@@ -40,24 +40,29 @@ func RunLogin(streams command.Streams, hubClient *hub.Client, store credentials.
 		return err
 	}
 
-	token, p, err := hubClient.Login(username, password, func() (string, error) {
-		fmt.Fprint(streams.Out(), ansi.Info("2FA required, please provide the 6 digit code: "))
-		reader := bufio.NewReader(streams.In())
-		return reader.ReadString('\n')
-	})
+	token, refreshToken, err := VerifyTwoFactorCode(streams, hubClient, username, password)
 	if err != nil {
 		return err
 	}
-	password = p
 
 	if err := hubClient.Update(hub.WithHubToken(token)); err != nil {
 		return err
 	}
 
 	return store.Store(credentials.Auth{
-		Username: username,
-		Password: password,
-		Token:    token,
+		Username:     username,
+		Password:     password,
+		Token:        token,
+		RefreshToken: refreshToken,
+	})
+}
+
+// VerifyTwoFactorCode run 2FA login
+func VerifyTwoFactorCode(streams command.Streams, hubClient *hub.Client, username string, password string) (string, string, error) {
+	return hubClient.Login(username, password, func() (string, error) {
+		fmt.Fprint(streams.Out(), ansi.Info("2FA required, please provide the 6 digit code: "))
+		reader := bufio.NewReader(streams.In())
+		return reader.ReadString('\n')
 	})
 }
 

@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	hubToolKey       = "hub-tool"
-	hubToolTokenKey  = "hub-tool-key"
-	expirationWindow = 1 * time.Minute
+	hubToolKey             = "hub-tool"
+	hubToolTokenKey        = "hub-tool-token"
+	hubToolRefreshTokenKey = "hub-tool-refresh-token"
+	expirationWindow       = 1 * time.Minute
 )
 
 // Store stores and retrieves user auth information
@@ -43,6 +44,9 @@ type Auth struct {
 	Password string
 	// Token is the 2FA token
 	Token string
+	// RefreshToken is used to refresh the token when
+	// it expires
+	RefreshToken string
 }
 
 // TokenExpired returns true if the token is malformed or is expired,
@@ -84,11 +88,16 @@ func (s *store) GetAuth() (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
+	refreshToken, err := s.s.Get(hubToolRefreshTokenKey)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Auth{
-		Username: auth.Username,
-		Password: auth.Password,
-		Token:    token.IdentityToken,
+		Username:     auth.Username,
+		Password:     auth.Password,
+		Token:        token.IdentityToken,
+		RefreshToken: refreshToken.IdentityToken,
 	}, nil
 }
 
@@ -98,6 +107,13 @@ func (s *store) Store(auth Auth) error {
 		IdentityToken: auth.Token,
 		ServerAddress: hubToolTokenKey,
 	}); err != nil {
+		return err
+	}
+	if err := s.s.Store((clitypes.AuthConfig{
+		Username:      auth.Username,
+		IdentityToken: auth.RefreshToken,
+		ServerAddress: hubToolRefreshTokenKey,
+	})); err != nil {
 		return err
 	}
 	return s.s.Store(clitypes.AuthConfig{

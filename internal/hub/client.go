@@ -206,7 +206,7 @@ func (c *Client) Login(username string, password string, twoFactorCodeProvider f
 		if err := json.Unmarshal(buf, &creds); err != nil {
 			return "", "", err
 		}
-		return creds.Token, password, nil
+		return creds.Token, "", nil
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		response2FA := twoFactorResponse{}
 		if err := json.Unmarshal(buf, &response2FA); err != nil {
