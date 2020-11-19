@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -30,7 +31,7 @@ const (
 	logoutName = "logout"
 )
 
-func newLogoutCmd(store credentials.Store) *cobra.Command {
+func newLogoutCmd(streams command.Streams, store credentials.Store) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   logoutName + " USERNAME",
 		Short:                 "Logout of the Hub",
@@ -39,10 +40,8 @@ func newLogoutCmd(store credentials.Store) *cobra.Command {
 			metrics.Send("root", logoutName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			if err := store.Erase(); err != nil {
-				return err
-			}
-			fmt.Println(ansi.Info("Logout Succeeded"))
+			store.Erase()
+			fmt.Fprintln(streams.Out(), ansi.Info("Logout Succeeded"))
 			return nil
 		},
 	}

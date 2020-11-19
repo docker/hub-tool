@@ -44,7 +44,7 @@ type options struct {
 }
 
 var (
-	anonCmds = []string{"version", "help", "login"}
+	anonCmds = []string{"version", "help", "login", "logout"}
 )
 
 // NewRootCmd returns the main command
@@ -117,7 +117,7 @@ Please login to Docker Hub using the "hub-tool login" command.`))
 
 	cmd.AddCommand(
 		newLoginCmd(streams, store, hubClient),
-		newLogoutCmd(store),
+		newLogoutCmd(streams, store),
 		account.NewAccountCmd(streams, hubClient),
 		token.NewTokenCmd(streams, hubClient),
 		org.NewOrgCmd(streams, hubClient),
