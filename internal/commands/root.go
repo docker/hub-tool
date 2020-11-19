@@ -17,6 +17,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/docker/cli/cli"
@@ -70,7 +71,7 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 			}
 
 			if cmd.Annotations["sudo"] == "true" {
-				return requireTwoFactorCode(streams, hubClient, store)
+				return requireTwoFactorCode(cmd.Context(), streams, hubClient, store)
 			}
 
 			ac, err := store.GetAuth()
@@ -147,7 +148,7 @@ func newVersionCmd(streams command.Streams) *cobra.Command {
 	}
 }
 
-func requireTwoFactorCode(streams command.Streams, hubClient *hub.Client, store credentials.Store) error {
+func requireTwoFactorCode(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store) error {
 	ac, err := store.GetAuth()
 	if err != nil {
 		return err
@@ -156,7 +157,7 @@ func requireTwoFactorCode(streams command.Streams, hubClient *hub.Client, store 
 		return nil
 	}
 
-	token, refreshToken, err := login.VerifyTwoFactorCode(streams, hubClient, ac.Username, ac.Password)
+	token, refreshToken, err := login.VerifyTwoFactorCode(ctx, streams, hubClient, ac.Username, ac.Password)
 	if err != nil {
 		return err
 	}

@@ -43,8 +43,8 @@ func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hu
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send("root", loginName)
 		},
-		RunE: func(_ *cobra.Command, args []string) error {
-			if err := login.RunLogin(streams, hubClient, store, args[0]); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := login.RunLogin(cmd.Context(), streams, hubClient, store, args[0]); err != nil {
 				return err
 			}
 			fmt.Println(ansi.Info("Login Succeeded"))
