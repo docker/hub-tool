@@ -40,7 +40,9 @@ func newLogoutCmd(streams command.Streams, store credentials.Store) *cobra.Comma
 			metrics.Send("root", logoutName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
-			store.Erase()
+			if err := store.Erase(); err != nil {
+				return err
+			}
 			fmt.Fprintln(streams.Out(), ansi.Info("Logout Succeeded"))
 			return nil
 		},
