@@ -42,6 +42,7 @@ func NewAccountCmd(streams command.Streams, hubClient *hub.Client) *cobra.Comman
 	}
 	cmd.AddCommand(
 		newInfoCmd(streams, hubClient, accountName),
+		newRateLimitingCmd(streams, hubClient, accountName),
 	)
 	return cmd
 }

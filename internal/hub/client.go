@@ -50,6 +50,8 @@ type Client struct {
 
 	domain           string
 	token            string
+	refreshToken     string
+	password         string
 	account          string
 	fetchAllElements bool
 	in               io.Reader
@@ -149,6 +151,22 @@ func WithHubAccount(account string) ClientOp {
 func WithHubToken(token string) ClientOp {
 	return func(c *Client) error {
 		c.token = token
+		return nil
+	}
+}
+
+// WithRefreshToken sets the refresh token to the client
+func WithRefreshToken(refreshToken string) ClientOp {
+	return func(c *Client) error {
+		c.refreshToken = refreshToken
+		return nil
+	}
+}
+
+// WithPassword sets the password to the client
+func WithPassword(password string) ClientOp {
+	return func(c *Client) error {
+		c.password = password
 		return nil
 	}
 }
