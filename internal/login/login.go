@@ -27,7 +27,7 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	dockerstreams "github.com/docker/cli/cli/streams"
-	"github.com/docker/docker/pkg/term"
+	"github.com/moby/term"
 	"github.com/pkg/errors"
 
 	"github.com/docker/hub-tool/internal/ansi"
