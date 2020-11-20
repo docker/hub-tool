@@ -87,8 +87,8 @@ func printRateLimit(rl *hub.RateLimits) func(io.Writer, interface{}) error {
 		if *rl.Remaining <= 10 {
 			color = ansi.Error
 		}
-		fmt.Fprintf(out, color("Limit: %d, %s window\n"), rl.Limit, units.HumanDuration(time.Duration(*rl.LimitWindow)*time.Second))
-		fmt.Fprintf(out, color("Remaining: %d, %s window\n"), rl.Remaining, units.HumanDuration(time.Duration(*rl.RemainingWindow)*time.Second))
+		fmt.Fprintf(out, color("Limit:     %d, %s window\n"), *rl.Limit, units.HumanDuration(time.Duration(*rl.LimitWindow)*time.Second))
+		fmt.Fprintf(out, color("Remaining: %d, %s window\n"), *rl.Remaining, units.HumanDuration(time.Duration(*rl.RemainingWindow)*time.Second))
 		return nil
 	}
 }
