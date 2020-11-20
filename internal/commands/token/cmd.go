@@ -43,7 +43,8 @@ func NewTokenCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command 
 		newCreateCmd(streams, hubClient, tokenName),
 		newInspectCmd(streams, hubClient, tokenName),
 		newListCmd(streams, hubClient, tokenName),
-		newUpdateCmd(streams, hubClient, tokenName),
+		newActivateCmd(streams, hubClient, tokenName),
+		newDeactivateCmd(streams, hubClient, tokenName),
 		newRmCmd(streams, hubClient, tokenName),
 	)
 	return cmd
