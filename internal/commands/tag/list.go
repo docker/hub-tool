@@ -116,6 +116,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:                   lsName + " [OPTION] REPOSITORY",
+		Aliases:               []string{"list"},
 		Short:                 "List all the images in a repository",
 		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,

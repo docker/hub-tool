@@ -79,6 +79,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:                   listName + " [ORGANIZATION]",
+		Aliases:               []string{"list"},
 		Short:                 "List all the repositories from your account or an organization",
 		Args:                  cli.RequiresMaxArgs(1),
 		DisableFlagsInUseLine: true,

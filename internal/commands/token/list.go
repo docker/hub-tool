@@ -73,6 +73,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:                   lsName + " [OPTION]",
+		Aliases:               []string{"list"},
 		Short:                 "List all the Personal Access Tokens",
 		Args:                  cli.NoArgs,
 		DisableFlagsInUseLine: true,
