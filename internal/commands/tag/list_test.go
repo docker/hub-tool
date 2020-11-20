@@ -19,7 +19,7 @@ package tag
 import (
 	"testing"
 
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 func TestMappingSortFieldToOrderingAPI(t *testing.T) {

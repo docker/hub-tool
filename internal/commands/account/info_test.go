@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"gotest.tools/golden"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 
 	"github.com/docker/hub-tool/internal/hub"
 )

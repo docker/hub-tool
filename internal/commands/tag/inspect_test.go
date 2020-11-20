@@ -24,8 +24,8 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/opencontainers/image-spec/specs-go"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"gotest.tools/golden"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 )
 
 func TestPrintImage(t *testing.T) {
