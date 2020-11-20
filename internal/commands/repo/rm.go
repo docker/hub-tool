@@ -76,7 +76,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 		}
 		fmt.Fprintln(streams.Out(), ansi.Warn(fmt.Sprintf("WARNING: You are about to permanently delete repository %q including %d tag(s)", namedRef.Name(), count)))
 		fmt.Fprintln(streams.Out(), ansi.Warn("         This action is irreversible"))
-		fmt.Fprintln(streams.Out(), ansi.Warn("Enter the name of the repository to confirm deletion:"), namedRef.Name())
+		fmt.Fprintln(streams.Out(), ansi.Info("Enter the name of the repository to confirm deletion:"), namedRef.Name())
 		userIn := make(chan string, 1)
 		go func() {
 			reader := bufio.NewReader(streams.In())

@@ -73,7 +73,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 	if !opts.force {
 		fmt.Fprintln(streams.Out(), ansi.Warn(fmt.Sprintf(`WARNING: You are about to permanently delete image "%s:%s"`, reference.FamiliarName(ref), ref.Tag())))
 		fmt.Fprintln(streams.Out(), ansi.Warn("         This action is irreversible"))
-		fmt.Fprintf(streams.Out(), "Are you sure you want to delete the image tagged %q from repository %q? [y/N]", ref.Tag(), reference.FamiliarName(ref))
+		fmt.Fprintf(streams.Out(), ansi.Info("Are you sure you want to delete the image tagged %q from repository %q? [y/N] "), ref.Tag(), reference.FamiliarName(ref))
 		userIn := make(chan string, 1)
 		go func() {
 			reader := bufio.NewReader(streams.In())
