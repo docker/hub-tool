@@ -70,13 +70,13 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 				return nil
 			}
 
-			if cmd.Annotations["sudo"] == "true" {
-				return requireTwoFactorCode(cmd.Context(), streams, hubClient, store)
-			}
-
 			ac, err := store.GetAuth()
 			if err != nil {
 				return err
+			}
+
+			if cmd.Annotations["sudo"] == "true" && ac.Username != "" {
+				return requireTwoFactorCode(cmd.Context(), streams, hubClient, store)
 			}
 
 			if ac.Username == "" {
