@@ -102,7 +102,7 @@ func readPassword(streams command.Streams) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Fprintf(streams.Out(), "Password: ")
+	fmt.Fprint(streams.Out(), ansi.Info("Password: "))
 	if err := term.DisableEcho(in.FD(), oldState); err != nil {
 		return "", err
 	}
