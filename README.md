@@ -29,7 +29,7 @@ Login to the [Docker Hub](https://hub.docker.com) using your username and
 password:
 
 ```console
-docker login yourusername
+hub-tool login yourusername
 ```
 
 > **Note:** When using a
