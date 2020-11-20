@@ -36,15 +36,19 @@ const (
 
 func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   loginName + " USERNAME",
+		Use:                   loginName + " [USERNAME]",
 		Short:                 "Login to the Hub",
-		Args:                  cli.ExactArgs(1),
+		Args:                  cli.RequiresMaxArgs(1),
 		DisableFlagsInUseLine: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			metrics.Send("root", loginName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := login.RunLogin(cmd.Context(), streams, hubClient, store, args[0]); err != nil {
+			username := ""
+			if len(args) > 0 {
+				username = args[0]
+			}
+			if err := login.RunLogin(cmd.Context(), streams, hubClient, store, username); err != nil {
 				return err
 			}
 			fmt.Fprintln(streams.Out(), ansi.Info("Login Succeeded"))
