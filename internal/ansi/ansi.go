@@ -37,7 +37,13 @@ var (
 	Error = utils.Red
 	// Emphasise color should be used with important content
 	Emphasise = utils.Green
+	// NoColor doesn't add any colors to the output
+	NoColor = noop
 )
+
+func noop(in string) string {
+	return in
+}
 
 // Link returns an ANSI terminal hyperlink
 func Link(url string, text string) string {

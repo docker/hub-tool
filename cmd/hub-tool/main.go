@@ -61,6 +61,8 @@ func main() {
 		hub.WithInStream(dockerCli.In()),
 		hub.WithOutStream(dockerCli.Out()),
 		hub.WithHubAccount(auth.Username),
+		hub.WithPassword(auth.Password),
+		hub.WithRefreshToken(auth.RefreshToken),
 		hub.WithHubToken(auth.Token))
 	if err != nil {
 		log.Fatal(err)
