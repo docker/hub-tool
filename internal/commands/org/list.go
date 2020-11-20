@@ -67,6 +67,7 @@ func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 	var opts listOptions
 	cmd := &cobra.Command{
 		Use:                   listName,
+		Aliases:               []string{"list"},
 		Short:                 "List all the organizations",
 		Args:                  cli.NoArgs,
 		DisableFlagsInUseLine: true,
