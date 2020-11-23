@@ -38,6 +38,13 @@ build: ## Build the tool in a container
 		--platform local \
 		--target hub
 
+.PHONY: mod-tidy
+mod-tidy: ## Update go.mod and go.sum
+	docker build $(BUILD_ARGS) . \
+		--output type=local,dest=. \
+		--platform local \
+		--target go-mod-tidy
+
 .PHONY: cross
 cross: ## Cross compile the tool binaries in a container
 	docker build $(BUILD_ARGS) . \
@@ -86,6 +93,7 @@ e2e: e2e-build ## Run the end-to-end tests
 		-v $(shell go env GOMODCACHE):/go/pkg/mod \
 		$(BINARY_NAME):e2e
 
+.PHONY: test-unit-build
 test-unit-build:
 	docker build $(BUILD_ARGS) . --target test-unit -t $(BINARY_NAME):test-unit
 

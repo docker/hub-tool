@@ -56,6 +56,18 @@ FROM builder AS check-go-mod
 RUN scripts/validate/check-go-mod
 
 ####
+# GO MOD TIDY
+####
+FROM builder as go-mod-tidy-run
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    go mod tidy
+
+FROM scratch AS go-mod-tidy
+COPY --from=go-mod-tidy-run /go/src/github.com/docker/hub-tool/go.mod /
+COPY --from=go-mod-tidy-run /go/src/github.com/docker/hub-tool/go.sum /
+
+####
 # BUILD
 ####
 FROM builder AS build
