@@ -11,6 +11,7 @@ if [ "$DIFF" ]; then
     echo
     echo "$DIFF"
     echo
+    git diff go.mod go.sum
     exit 1
 else
     echo "go.mod is correct"
