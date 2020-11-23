@@ -75,32 +75,22 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 				return err
 			}
 
-			if cmd.Annotations["sudo"] == "true" && ac.Username != "" {
-				return requireTwoFactorCode(cmd.Context(), streams, hubClient, store)
-			}
-
 			if ac.Username == "" {
 				log.Fatal(ansi.Error(`You need to be logged in to Docker Hub to use this tool.
 Please login to Docker Hub using the "hub-tool login" command.`))
 			}
 
-			if !ac.TokenExpired() {
+			if cmd.Annotations["sudo"] == "true" {
+				if err := tryLogin(cmd.Context(), streams, hubClient, ac, store); err != nil {
+					return err
+				}
 				return nil
 			}
 
-			token, refreshToken, err := hubClient.Login(ac.Username, ac.Password, func() (string, error) {
-				return "", nil
-			})
-			if err != nil {
-				return err
+			if ac.TokenExpired() {
+				return tryLogin(cmd.Context(), streams, hubClient, ac, store)
 			}
-
-			return store.Store(credentials.Auth{
-				Username:     ac.Username,
-				Password:     ac.Password,
-				Token:        token,
-				RefreshToken: refreshToken,
-			})
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.showVersion {
@@ -149,16 +139,8 @@ func newVersionCmd(streams command.Streams) *cobra.Command {
 	}
 }
 
-func requireTwoFactorCode(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store) error {
-	ac, err := store.GetAuth()
-	if err != nil {
-		return err
-	}
-	if !ac.TokenExpired() {
-		return nil
-	}
-
-	token, refreshToken, err := login.VerifyTwoFactorCode(ctx, streams, hubClient, ac.Username, ac.Password)
+func tryLogin(ctx context.Context, streams command.Streams, hubClient *hub.Client, ac *credentials.Auth, store credentials.Store) error {
+	token, refreshToken, err := login.Login(ctx, streams, hubClient, ac.Username, ac.Password)
 	if err != nil {
 		return err
 	}
