@@ -49,7 +49,7 @@ func RunLogin(ctx context.Context, streams command.Streams, hubClient *hub.Clien
 		return err
 	}
 
-	token, refreshToken, err := VerifyTwoFactorCode(ctx, streams, hubClient, username, password)
+	token, refreshToken, err := Login(ctx, streams, hubClient, username, password)
 	if err != nil {
 		return err
 	}
@@ -66,8 +66,8 @@ func RunLogin(ctx context.Context, streams command.Streams, hubClient *hub.Clien
 	})
 }
 
-// VerifyTwoFactorCode run 2FA login
-func VerifyTwoFactorCode(ctx context.Context, streams command.Streams, hubClient *hub.Client, username string, password string) (string, string, error) {
+// Login runs login and optionnaly the 2FA
+func Login(ctx context.Context, streams command.Streams, hubClient *hub.Client, username string, password string) (string, string, error) {
 	return hubClient.Login(username, password, func() (string, error) {
 		return readClearText(ctx, streams, "2FA required, please provide the 6 digit code: ")
 	})
