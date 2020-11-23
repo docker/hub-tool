@@ -126,7 +126,11 @@ func (c *Client) GetToken(tokenUUID string) (*Token, error) {
 
 // UpdateToken updates a token's description and activeness
 func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Token, error) {
-	data, err := json.Marshal(hubTokenRequest{Description: description, IsActive: isActive})
+	tokenRequest := hubTokenRequest{IsActive: isActive}
+	if description != "" {
+		tokenRequest.Description = description
+	}
+	data, err := json.Marshal(tokenRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +191,7 @@ func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
 
 type hubTokenRequest struct {
 	Description string `json:"token_label,omitempty"`
-	IsActive    bool   `json:"is_active,omitempty"`
+	IsActive    bool   `json:"is_active"`
 }
 
 type hubTokenResponse struct {
