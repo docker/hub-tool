@@ -15,6 +15,7 @@ include vars.mk
 export DOCKER_BUILDKIT=1
 
 BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION) \
+    --build-arg CLI_VERSION=$(CLI_VERSION) \
     --build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
     --build-arg GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION) \
     --build-arg TAG_NAME=$(TAG_NAME) \
@@ -106,7 +107,7 @@ test-unit: test-unit-build ## Run unit tests
 
 .PHONY: lint
 lint: ## Run the go linter
-	@docker build . --target lint
+	@docker build $(BUILD_ARGS) . --target lint
 
 .PHONY: validate-headers
 validate-headers: ## Validate files license header
@@ -116,7 +117,7 @@ validate-headers: ## Validate files license header
 
 .PHONY: validate-go-mod
 validate-go-mod: ## Validate go.mod and go.sum are up-to-date
-	@docker build . --target check-go-mod
+	@docker build $(BUILD_ARGS) . --target check-go-mod
 
 .PHONY: validate
 validate: validate-go-mod validate-headers ## Validate sources

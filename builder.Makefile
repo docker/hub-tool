@@ -44,7 +44,7 @@ TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
 .PHONY: lint
 lint:
-	golangci-lint run --timeout 10m0s ./...
+	$(STATIC_FLAGS) golangci-lint run --timeout 10m0s ./...
 
 .PHONY: e2e
 e2e:
