@@ -70,6 +70,10 @@ package-cross: cross ## Package the cross compiled binaries in tarballs for *nix
 		--platform darwin/amd64 \
 		--output type=tar,dest=- \
 		--target package | gzip -9 > dist/$(BINARY_NAME)-darwin-amd64.tar.gz
+	docker build $(BUILD_ARGS) . \
+		--platform darwin/arm64 \
+		--output type=tar,dest=- \
+		--target package | gzip -9 > dist/$(BINARY_NAME)-darwin-arm64.tar.gz
 	cp bin/$(BINARY_NAME)_windows_amd64.exe $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -f dist/$(BINARY_NAME)-windows-amd64.zip && zip dist/$(BINARY_NAME)-windows-amd64.zip -j packaging/LICENSE $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -r $(TMPDIR_WIN_PKG)
