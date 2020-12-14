@@ -15,6 +15,7 @@ include vars.mk
 export DOCKER_BUILDKIT=1
 
 BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION) \
+    --build-arg CLI_VERSION=$(CLI_VERSION)
     --build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
     --build-arg GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION) \
     --build-arg TAG_NAME=$(TAG_NAME) \

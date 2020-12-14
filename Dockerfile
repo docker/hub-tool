@@ -16,16 +16,18 @@
 #   limitations under the License.
 
 
-ARG GO_VERSION=1.15.5
-ARG CLI_VERSION=19.03.13
-ARG ALPINE_VERSION=3.12.1
-ARG GOLANGCI_LINT_VERSION=v1.32.2-alpine
+ARG GO_VERSION=1.15.6
+ARG CLI_VERSION=20.10.2
+ARG ALPINE_VERSION=3.12.2
+ARG GOLANGCI_LINT_VERSION=v1.33.0-alpine
 
 ####
 # BUILDER
 ####
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS builder
 WORKDIR /go/src/github.com/docker/hub-tool
+RUN apk add --no-cache \
+    make
 
 # cache go vendoring
 COPY go.* ./
@@ -42,7 +44,6 @@ FROM golangci/golangci-lint:${GOLANGCI_LINT_VERSION} AS lint-base
 # LINT
 ####
 FROM builder AS lint
-ENV CGO_ENABLED=0
 COPY --from=lint-base /usr/bin/golangci-lint /usr/bin/golangci-lint
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
@@ -116,11 +117,12 @@ COPY --from=cross /${BINARY_NAME}_${TARGETOS}_${TARGETARCH} /${BINARY_NAME}/${BI
 # GOTESTSUM
 ####
 FROM alpine:${ALPINE_VERSION} AS gotestsum
-ARG GOTESTSUM_VERSION=0.6.0
-
-RUN apk add -U --no-cache wget tar
+RUN apk add --no-cache \
+    tar \
+    wget
 # install gotestsum
 WORKDIR /root
+ARG GOTESTSUM_VERSION=0.6.0
 RUN wget https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz -nv -O - | tar -xz
 
 ####
@@ -129,7 +131,6 @@ RUN wget https://github.com/gotestyourself/gotestsum/releases/download/v${GOTEST
 FROM builder AS test-unit
 ARG TAG_NAME
 ENV TAG_NAME=$TAG_NAME
-
 COPY --from=gotestsum /root/gotestsum /usr/local/bin/gotestsum
 CMD ["make", "-f", "builder.Makefile", "test-unit"]
 
@@ -149,7 +150,6 @@ ARG BINARY
 ENV TAG_NAME=$TAG_NAME
 ENV BINARY=$BINARY
 ENV DOCKER_CONFIG="/root/.docker"
-
 # install hub tool
 COPY --from=build /go/src/github.com/docker/hub-tool/bin/${BINARY} ./bin/${BINARY}
 RUN chmod +x ./bin/${BINARY}
