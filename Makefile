@@ -111,9 +111,7 @@ lint: ## Run the go linter
 
 .PHONY: validate-headers
 validate-headers: ## Validate files license header
-	docker run --rm -v $(CURDIR):/work -w /work \
-		golang:${GO_VERSION} \
-		bash -c 'go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader'
+	@docker build $(BUILD_ARGS) . --target validate-headers
 
 .PHONY: validate-go-mod
 validate-go-mod: ## Validate go.mod and go.sum are up-to-date

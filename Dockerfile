@@ -27,6 +27,7 @@ ARG GOLANGCI_LINT_VERSION=v1.33.0-alpine
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS builder
 WORKDIR /go/src/github.com/docker/hub-tool
 RUN apk add --no-cache \
+    bash \
     git \
     make
 
@@ -50,6 +51,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     --mount=type=cache,target=/root/.cache/golangci-lint \
     make -f builder.Makefile lint
+
+####
+# VALIDATE HEADERS
+####
+FROM builder AS validate-headers
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader
 
 ####
 # CHECK GO MOD
