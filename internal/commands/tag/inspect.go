@@ -204,7 +204,7 @@ func printConfig(out io.Writer, image *Image) error {
 	fmt.Fprintf(out, ansi.Title("Config:")+"\n")
 	fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", image.Manifest.Config.MediaType)
 	fmt.Fprintf(out, ansi.Key("Size:")+"\t\t%v\n", units.HumanSize(float64(image.Manifest.Config.Size)))
-	fmt.Fprintf(out, ansi.Key("Digest:")+"\t%s\n", image.Manifest.Config.Digest)
+	fmt.Fprintf(out, ansi.Key("Digest:")+"\t\t%s\n", image.Manifest.Config.Digest)
 	if len(image.Config.Config.Cmd) > 0 {
 		fmt.Fprintf(out, ansi.Key("Command:")+"\t%q\n", strings.TrimPrefix(strings.Join(image.Config.Config.Cmd, " "), "/bin/sh -c "))
 	}
@@ -256,7 +256,7 @@ func printLayers(out io.Writer, image *Image) error {
 		}
 		fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", layer.MediaType)
 		fmt.Fprintf(out, ansi.Key("Size:")+"\t\t%v\n", units.HumanSize(float64(layer.Size)))
-		fmt.Fprintf(out, ansi.Key("Digest:")+"\t%s\n", layer.Digest)
+		fmt.Fprintf(out, ansi.Key("Digest:")+"\t\t%s\n", layer.Digest)
 		if len(image.Manifest.Layers) == len(history) {
 			fmt.Fprintf(out, ansi.Key("Command:")+"\t%s\n", cleanCreatedBy(history[i].CreatedBy))
 			if history[i].Created != nil {
