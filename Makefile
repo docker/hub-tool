@@ -14,6 +14,8 @@
 include vars.mk
 export DOCKER_BUILDKIT=1
 
+DOCKER_BUILD:=docker buildx build
+
 BUILD_ARGS:=--build-arg GO_VERSION=$(GO_VERSION) \
     --build-arg CLI_VERSION=$(CLI_VERSION) \
     --build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
@@ -27,6 +29,8 @@ E2E_ENV:=--env E2E_HUB_USERNAME \
     --env E2E_HUB_TOKEN \
     --env E2E_TEST_NAME
 
+UNIX_PLATFORMS:=linux/amd64 linux/arm linux/arm64 darwin/amd64
+
 TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
 .PHONY: all
@@ -34,43 +38,31 @@ all: build
 
 .PHONY: build
 build: ## Build the tool in a container
-	docker build $(BUILD_ARGS) . \
+	$(DOCKER_BUILD) $(BUILD_ARGS) . \
 		--output type=local,dest=./bin \
 		--platform local \
 		--target hub
 
 .PHONY: mod-tidy
 mod-tidy: ## Update go.mod and go.sum
-	docker build $(BUILD_ARGS) . \
+	$(DOCKER_BUILD) $(BUILD_ARGS) . \
 		--output type=local,dest=. \
 		--platform local \
 		--target go-mod-tidy
 
 .PHONY: cross
 cross: ## Cross compile the tool binaries in a container
-	docker build $(BUILD_ARGS) . \
+	$(DOCKER_BUILD) $(BUILD_ARGS) . \
 		--output type=local,dest=./bin \
 		--target cross
 
 .PHONY: package-cross
 package-cross: cross ## Package the cross compiled binaries in tarballs for *nix and a zip for Windows
 	mkdir -p dist
-	docker build $(BUILD_ARGS) . \
-		--platform linux/amd64 \
-		--output type=tar,dest=- \
-		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-amd64.tar.gz
-	docker build $(BUILD_ARGS) . \
-		--platform linux/arm64 \
-		--output type=tar,dest=- \
-		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-arm64.tar.gz
-	docker build $(BUILD_ARGS) . \
-		--platform linux/arm \
-		--output type=tar,dest=- \
-		--target package | gzip -9 > dist/$(BINARY_NAME)-linux-arm.tar.gz
-	docker build $(BUILD_ARGS) . \
-		--platform darwin/amd64 \
-		--output type=tar,dest=- \
-		--target package | gzip -9 > dist/$(BINARY_NAME)-darwin-amd64.tar.gz
+	$(foreach plat,$(UNIX_PLATFORMS),$(DOCKER_BUILD) $(BUILD_ARGS) . \
+			--platform $(plat) \
+			--output type=tar,dest=- \
+			--target package | gzip -9 > dist/$(BINARY_NAME)-$(subst /,-,$(plat)).tar.gz ;)
 	cp bin/$(BINARY_NAME)_windows_amd64.exe $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -f dist/$(BINARY_NAME)-windows-amd64.zip && zip dist/$(BINARY_NAME)-windows-amd64.zip -j packaging/LICENSE $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -r $(TMPDIR_WIN_PKG)
@@ -84,7 +76,7 @@ test: test-unit e2e
 
 .PHONY: e2e-build
 e2e-build:
-	docker build $(BUILD_ARGS) . --target e2e -t $(BINARY_NAME):e2e
+	$(DOCKER_BUILD) $(BUILD_ARGS) . --target e2e -t $(BINARY_NAME):e2e
 
 .PHONY: e2e
 e2e: e2e-build ## Run the end-to-end tests
@@ -96,7 +88,7 @@ e2e: e2e-build ## Run the end-to-end tests
 
 .PHONY: test-unit-build
 test-unit-build:
-	docker build $(BUILD_ARGS) . --target test-unit -t $(BINARY_NAME):test-unit
+	$(DOCKER_BUILD) $(BUILD_ARGS) . --target test-unit -t $(BINARY_NAME):test-unit
 
 .PHONY: test-unit
 test-unit: test-unit-build ## Run unit tests
@@ -107,15 +99,15 @@ test-unit: test-unit-build ## Run unit tests
 
 .PHONY: lint
 lint: ## Run the go linter
-	@docker build $(BUILD_ARGS) . --target lint
+	@$(DOCKER_BUILD) $(BUILD_ARGS) . --target lint
 
 .PHONY: validate-headers
 validate-headers: ## Validate files license header
-	@docker build $(BUILD_ARGS) . --target validate-headers
+	@$(DOCKER_BUILD) $(BUILD_ARGS) . --target validate-headers
 
 .PHONY: validate-go-mod
 validate-go-mod: ## Validate go.mod and go.sum are up-to-date
-	@docker build $(BUILD_ARGS) . --target check-go-mod
+	@$(DOCKER_BUILD) $(BUILD_ARGS) . --target check-go-mod
 
 .PHONY: validate
 validate: validate-go-mod validate-headers ## Validate sources
