@@ -38,40 +38,45 @@ const (
 	lsName = "ls"
 )
 
+type cliTag struct {
+	hub.Tag
+	Vulnerabilities *hub.ScanReportSummary
+}
+
 var (
 	defaultColumns = []column{
-		{"TAG", func(t hub.Tag) (string, int) { return t.Name, len(t.Name) }},
-		{"DIGEST", func(t hub.Tag) (string, int) {
+		{"TAG", func(t cliTag) (string, int) { return t.Name, len(t.Name) }},
+		{"DIGEST", func(t cliTag) (string, int) {
 			if len(t.Images) > 0 {
 				return t.Images[0].Digest, len(t.Images[0].Digest)
 			}
 			return "", 0
 		}},
-		{"STATUS", func(t hub.Tag) (string, int) {
+		{"STATUS", func(t cliTag) (string, int) {
 			return t.Status, len(t.Status)
 		}},
-		{"LAST UPDATE", func(t hub.Tag) (string, int) {
+		{"LAST UPDATE", func(t cliTag) (string, int) {
 			if t.LastUpdated.Nanosecond() == 0 {
 				return "", 0
 			}
 			s := fmt.Sprintf("%s ago", units.HumanDuration(time.Since(t.LastUpdated)))
 			return s, len(s)
 		}},
-		{"LAST PUSHED", func(t hub.Tag) (string, int) {
+		{"LAST PUSHED", func(t cliTag) (string, int) {
 			if t.LastPushed.Nanosecond() == 0 {
 				return "", 0
 			}
 			s := units.HumanDuration(time.Since(t.LastPushed))
 			return s, len(s)
 		}},
-		{"LAST PULLED", func(t hub.Tag) (string, int) {
+		{"LAST PULLED", func(t cliTag) (string, int) {
 			if t.LastPulled.Nanosecond() == 0 {
 				return "", 0
 			}
 			s := units.HumanDuration(time.Since(t.LastPulled))
 			return s, len(s)
 		}},
-		{"SIZE", func(t hub.Tag) (string, int) {
+		{"SIZE", func(t cliTag) (string, int) {
 			size := t.FullSize
 			if len(t.Images) > 0 {
 				size = 0
@@ -83,9 +88,31 @@ var (
 			return s, len(s)
 		}},
 	}
+	scanColumn = column{
+		"VULNERABILITIES (H/M/L)",
+		func(t cliTag) (string, int) {
+			if t.Vulnerabilities != nil {
+				high := ansi.Success("0")
+				if t.Vulnerabilities.High > 0 {
+					high = ansi.Error(fmt.Sprintf("%d", t.Vulnerabilities.High))
+				}
+				medium := ansi.Success("0")
+				if t.Vulnerabilities.Medium > 0 {
+					medium = ansi.Warn(fmt.Sprintf("%d", t.Vulnerabilities.Medium))
+				}
+				low := ansi.Success("0")
+				if t.Vulnerabilities.Low > 0 {
+					low = ansi.Info(fmt.Sprintf("%d", t.Vulnerabilities.Low))
+				}
+				s := fmt.Sprintf("%s/%s/%s", high, medium, low)
+				return s, len(s)
+			}
+			return "", 0
+		},
+	}
 	platformColumn = column{
 		"OS/ARCH",
-		func(t hub.Tag) (string, int) {
+		func(t cliTag) (string, int) {
 			var platforms []string
 			for _, image := range t.Images {
 				platform := fmt.Sprintf("%s/%s", image.Os, image.Architecture)
@@ -102,7 +129,7 @@ var (
 
 type column struct {
 	header string
-	value  func(t hub.Tag) (string, int)
+	value  func(t cliTag) (string, int)
 }
 
 type listOptions struct {
@@ -149,21 +176,43 @@ func runList(streams command.Streams, hubClient *hub.Client, opts listOptions, r
 	if ordering != "" {
 		reqOps = append(reqOps, hub.WithSortingOrder(ordering))
 	}
+	now := time.Now()
 	tags, total, err := hubClient.GetTags(repository, reqOps...)
 	if err != nil {
 		return err
+	}
+	tagList := makeTagList(tags)
+	now = time.Now()
+	// TODO: test if scanning enabled or not via entitlement API
+	scanSummaries, err := hubClient.GetScanSummaries(repository, tagList...)
+	if err != nil {
+		return err
+	}
+	if len(scanSummaries) > 0 {
+		defaultColumns = append(defaultColumns, scanColumn)
+	}
+	var cliTags []cliTag
+	for _, t := range tags {
+		var vulns *hub.ScanReportSummary
+		if summary, ok := scanSummaries[t.Images[0].Digest]; ok {
+			vulns = &summary
+		}
+		cliTags = append(cliTags, cliTag{
+			Tag:             t,
+			Vulnerabilities: vulns,
+		})
 	}
 
 	if opts.platforms {
 		defaultColumns = append(defaultColumns, platformColumn)
 	}
 
-	return opts.Print(streams.Out(), tags, printTags(total))
+	return opts.Print(streams.Out(), cliTags, printTags(total))
 }
 
 func printTags(total int) format.PrettyPrinter {
 	return func(out io.Writer, values interface{}) error {
-		tags := values.([]hub.Tag)
+		tags := values.([]cliTag)
 		tw := tabwriter.New(out, "    ")
 		for _, column := range defaultColumns {
 			tw.Column(ansi.Header(column.header), len(column.header))
@@ -220,4 +269,12 @@ func mapOrdering(order string) (string, error) {
 	default:
 		return "", fmt.Errorf(`unknown sorting column %q: should be either "name" or "updated"`, fields[0])
 	}
+}
+
+func makeTagList(tags []hub.Tag) []string {
+	var tagsList []string
+	for _, t := range tags {
+		tagsList = append(tagsList, t.Images[0].Digest)
+	}
+	return tagsList
 }

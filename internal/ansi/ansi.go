@@ -35,6 +35,8 @@ var (
 	Warn = utils.Yellow
 	// Error color should be used when something bad happened
 	Error = utils.Red
+	// Success color shold be used when something happened successfully
+	Success = utils.Green
 	// Emphasise color should be used with important content
 	Emphasise = utils.Green
 	// NoColor doesn't add any colors to the output
