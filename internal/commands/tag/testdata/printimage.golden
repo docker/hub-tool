@@ -13,7 +13,7 @@ Created:	Less than a second ago
 Config:
 MediaType:	mediatype/config
 Size:		123B
-Digest:	sha256:beef
+Digest:		sha256:beef
 Command:	"./cmd parameter"
 Entrypoint:	"./entrypoint parameter"
 User:	user
@@ -30,6 +30,6 @@ Stop signal:		SIGTERM
 Layers:
 MediaType:	mediatype/layer
 Size:		456B
-Digest:	sha256:c0ffee
+Digest:		sha256:c0ffee
 Command:	apt-get install
 Created:	Less than a second ago
