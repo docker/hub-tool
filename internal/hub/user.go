@@ -28,10 +28,10 @@ const (
 	UserURL = "/v2/user/"
 )
 
-//User represents the user information
-type User struct {
+//Account represents a user or organization information
+type Account struct {
 	ID       string
-	UserName string
+	Name     string
 	FullName string
 	Location string
 	Company  string
@@ -39,7 +39,7 @@ type User struct {
 }
 
 //GetUserInfo returns the information on the user retrieved from Hub
-func (c *Client) GetUserInfo() (*User, error) {
+func (c *Client) GetUserInfo() (*Account, error) {
 	u, err := url.Parse(c.domain + UserURL)
 	if err != nil {
 		return nil, err
@@ -56,9 +56,9 @@ func (c *Client) GetUserInfo() (*User, error) {
 	if err := json.Unmarshal(response, &hubResponse); err != nil {
 		return nil, err
 	}
-	return &User{
+	return &Account{
 		ID:       hubResponse.ID,
-		UserName: hubResponse.UserName,
+		Name:     hubResponse.UserName,
 		FullName: hubResponse.FullName,
 		Location: hubResponse.Location,
 		Company:  hubResponse.Company,

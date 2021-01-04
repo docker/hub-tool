@@ -300,6 +300,9 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 	}
 	log.Tracef("HTTP response: %+v", resp)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if resp.StatusCode == http.StatusForbidden {
+			return nil, &forbiddenError{}
+		}
 		buf, err := ioutil.ReadAll(resp.Body)
 		log.Debugf("bad status code %q: %s", resp.Status, buf)
 		if err == nil {

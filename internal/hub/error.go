@@ -44,3 +44,15 @@ func IsInvalidTokenError(err error) bool {
 	_, ok := err.(*invalidTokenError)
 	return ok
 }
+
+type forbiddenError struct{}
+
+func (f forbiddenError) Error() string {
+	return "operation not permitted"
+}
+
+// IsForbiddenError check if the error type is a forbidden error
+func IsForbiddenError(err error) bool {
+	_, ok := err.(*forbiddenError)
+	return ok
+}

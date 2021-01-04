@@ -32,3 +32,8 @@ func TestIsInvalidTokenError(t *testing.T) {
 	assert.Assert(t, IsInvalidTokenError(&invalidTokenError{}))
 	assert.Assert(t, !IsInvalidTokenError(errors.New("")))
 }
+
+func TestIsForbiddenError(t *testing.T) {
+	assert.Assert(t, IsForbiddenError(&forbiddenError{}))
+	assert.Assert(t, !IsForbiddenError(errors.New("")))
+}
