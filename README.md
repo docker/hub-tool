@@ -39,6 +39,7 @@ hub-tool login yourusername
 ### Listing tags
 
 ```console
+$ hub-tool tag ls docker
 TAG                                   DIGEST                                                                     STATUS    LAST UPDATE    LAST PUSHED    LAST PULLED    SIZE
 docker:stable-dind-rootless           sha256:c96432c62569526fc710854c4d8441dae22907119c8987a5e82a2868bd509fd4    stale     3 days ago     3 days                        96.55MB
 docker:stable-dind                    sha256:f998921d365053bf7e3f98794f6c23ca44e6809832d78105bc4d2da6bb8521ed    stale     3 days ago     3 days                        274.6MB
