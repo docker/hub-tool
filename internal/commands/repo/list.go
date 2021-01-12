@@ -78,7 +78,7 @@ type listOptions struct {
 func newListCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts listOptions
 	cmd := &cobra.Command{
-		Use:                   listName + " [ORGANIZATION]",
+		Use:                   listName + " [OPTIONS] [ORGANIZATION]",
 		Aliases:               []string{"list"},
 		Short:                 "List all the repositories from your account or an organization",
 		Args:                  cli.RequiresMaxArgs(1),

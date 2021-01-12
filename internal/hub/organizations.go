@@ -31,6 +31,8 @@ import (
 const (
 	// OrganizationsURL path to the Hub API listing the organizations
 	OrganizationsURL = "/v2/user/orgs/"
+	// OrganizationInfoURL path to the Hub API returning organization info
+	OrganizationInfoURL = "/v2/orgs/%s"
 )
 
 //Organization represents a Docker Hub organization
@@ -68,6 +70,35 @@ func (c *Client) GetOrganizations(ctx context.Context) ([]Organization, error) {
 	}
 
 	return organizations, nil
+}
+
+//GetOrganizationInfo returns organization info
+func (c *Client) GetOrganizationInfo(orgname string) (*Account, error) {
+	u, err := url.Parse(c.domain + fmt.Sprintf(OrganizationInfoURL, orgname))
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return nil, err
+	}
+	var hubResponse hubOrgInfoResponse
+	if err := json.Unmarshal(response, &hubResponse); err != nil {
+		return nil, err
+	}
+
+	return &Account{
+		ID:       hubResponse.ID,
+		Name:     hubResponse.OrgName,
+		FullName: hubResponse.FullName,
+		Location: hubResponse.Location,
+		Company:  hubResponse.Company,
+		Joined:   hubResponse.DateJoined,
+	}, nil
 }
 
 func (c *Client) getOrganizationsPage(ctx context.Context, url string) ([]Organization, string, error) {
@@ -159,4 +190,17 @@ type hubOrganizationResult struct {
 	GravatarURL   string    `json:"gravatar_url"`
 	ProfileURL    string    `json:"profile_url"`
 	ID            string    `json:"id"`
+}
+
+type hubOrgInfoResponse struct {
+	ID            string    `json:"id"`
+	OrgName       string    `json:"orgname"`
+	FullName      string    `json:"full_name"`
+	Location      string    `json:"location"`
+	Company       string    `json:"company"`
+	GravatarEmail string    `json:"gravatar_email"`
+	GravatarURL   string    `json:"gravatar_url"`
+	ProfileURL    string    `json:"profile_url"`
+	DateJoined    time.Time `json:"date_joined"`
+	Type          string    `json:"type"`
 }

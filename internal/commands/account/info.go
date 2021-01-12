@@ -25,6 +25,7 @@ import (
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
@@ -43,9 +44,9 @@ type infoOptions struct {
 func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts infoOptions
 	cmd := &cobra.Command{
-		Use:                   infoName + " [OPTIONS]",
+		Use:                   infoName + " [OPTIONS] [ORGANIZATION]",
 		Short:                 "Print the account information",
-		Args:                  cli.NoArgs,
+		Args:                  cli.RequiresMaxArgs(1),
 		DisableFlagsInUseLine: true,
 		Annotations: map[string]string{
 			"sudo": "true",
@@ -54,55 +55,107 @@ func newInfoCmd(streams command.Streams, hubClient *hub.Client, parent string) *
 			metrics.Send(parent, infoName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInfo(streams, hubClient, opts)
+			if len(args) > 0 {
+				return runOrgInfo(streams, hubClient, opts, args[0])
+			}
+			return runUserInfo(streams, hubClient, opts)
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
 	return cmd
 }
 
-func runInfo(streams command.Streams, hubClient *hub.Client, opts infoOptions) error {
+func runOrgInfo(streams command.Streams, hubClient *hub.Client, opts infoOptions, orgName string) error {
+	var (
+		org         *hub.Account
+		consumption *hub.Consumption
+	)
+
+	g := errgroup.Group{}
+	g.Go(func() error {
+		var err error
+		org, err = hubClient.GetOrganizationInfo(orgName)
+		return checkForbiddenError(err)
+	})
+	g.Go(func() error {
+		var err error
+		consumption, err = hubClient.GetOrgConsumption(orgName)
+		return checkForbiddenError(err)
+	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	plan, err := hubClient.GetHubPlan(org.ID)
+	if err != nil {
+		return checkForbiddenError(err)
+	}
+
+	return opts.Print(streams.Out(), account{org, plan, consumption}, printAccount)
+}
+
+func runUserInfo(streams command.Streams, hubClient *hub.Client, opts infoOptions) error {
 	user, err := hubClient.GetUserInfo()
 	if err != nil {
-		return err
+		return checkForbiddenError(err)
+	}
+	consumption, err := hubClient.GetUserConsumption(user.Name)
+	if err != nil {
+		return checkForbiddenError(err)
 	}
 	plan, err := hubClient.GetHubPlan(user.ID)
 	if err != nil {
-		return err
+		return checkForbiddenError(err)
 	}
-	return opts.Print(streams.Out(), account{user, plan}, printAccount)
+
+	return opts.Print(streams.Out(), account{user, plan, consumption}, printAccount)
+}
+
+func checkForbiddenError(err error) error {
+	if hub.IsForbiddenError(err) {
+		return fmt.Errorf(ansi.Error("failed to get organization information, you need to be the organization Owner"))
+	}
+	return err
 }
 
 func printAccount(out io.Writer, value interface{}) error {
 	account := value.(account)
 
 	// print user info
-	fmt.Fprintf(out, ansi.Key("Username:")+"\t%s\n", account.User.UserName)
-	fmt.Fprintf(out, ansi.Key("Full name:")+"\t%s\n", account.User.FullName)
-	fmt.Fprintf(out, ansi.Key("Company:")+"\t%s\n", account.User.Company)
-	fmt.Fprintf(out, ansi.Key("Location:")+"\t%s\n", account.User.Location)
-	fmt.Fprintf(out, ansi.Key("Joined:")+"\t\t%s ago\n", units.HumanDuration(time.Since(account.User.Joined)))
+	fmt.Fprintf(out, ansi.Key("Name:")+"\t\t%s\n", account.Account.Name)
+	fmt.Fprintf(out, ansi.Key("Full name:")+"\t%s\n", account.Account.FullName)
+	fmt.Fprintf(out, ansi.Key("Company:")+"\t%s\n", account.Account.Company)
+	fmt.Fprintf(out, ansi.Key("Location:")+"\t%s\n", account.Account.Location)
+	fmt.Fprintf(out, ansi.Key("Joined:")+"\t\t%s ago\n", units.HumanDuration(time.Since(account.Account.Joined)))
 	fmt.Fprintf(out, ansi.Key("Plan:")+"\t\t%s\n", ansi.Emphasise(account.Plan.Name))
 
 	// print plan info
 	fmt.Fprintf(out, ansi.Key("Limits:")+"\n")
-	fmt.Fprintf(out, ansi.Key("  Seats:")+"\t\t%v\n", account.Plan.Limits.Seats)
-	fmt.Fprintf(out, ansi.Key("  Private repositories:")+"\t%v\n", account.Plan.Limits.PrivateRepos)
-	fmt.Fprintf(out, ansi.Key("  Parallel builds:")+"\t%v\n", account.Plan.Limits.ParallelBuilds)
+	fmt.Fprintf(out, ansi.Key("  Seats:")+"\t\t%v\n", getCurrentLimit(account.Consumption.Seats, account.Plan.Limits.Seats))
+	fmt.Fprintf(out, ansi.Key("  Private repositories:")+"\t%v\n", getCurrentLimit(account.Consumption.PrivateRepositories, account.Plan.Limits.PrivateRepos))
+	fmt.Fprintf(out, ansi.Key("  Teams:")+"\t\t%v\n", getCurrentLimit(account.Consumption.Teams, account.Plan.Limits.Teams))
 	fmt.Fprintf(out, ansi.Key("  Collaborators:")+"\t%v\n", getLimit(account.Plan.Limits.Collaborators))
-	fmt.Fprintf(out, ansi.Key("  Teams:")+"\t\t%v\n", getLimit(account.Plan.Limits.Teams))
+	fmt.Fprintf(out, ansi.Key("  Parallel builds:")+"\t%v\n", getLimit(account.Plan.Limits.ParallelBuilds))
 
 	return nil
 }
 
-func getLimit(number int) string {
-	if number == 9999 {
+func getCurrentLimit(current, limit int) string {
+	if limit == 9999 {
 		return ansi.Emphasise("unlimited")
 	}
-	return fmt.Sprintf("%v", number)
+	return fmt.Sprintf("%v/%v", current, limit)
+}
+
+func getLimit(limit int) string {
+	if limit == 9999 {
+		return ansi.Emphasise("unlimited")
+	}
+	return fmt.Sprintf("%v", limit)
 }
 
 type account struct {
-	User *hub.User
-	Plan *hub.Plan
+	Account     *hub.Account
+	Plan        *hub.Plan
+	Consumption *hub.Consumption
 }

@@ -29,9 +29,9 @@ import (
 
 func TestInfoOutput(t *testing.T) {
 	account := account{
-		User: &hub.User{
+		Account: &hub.Account{
 			ID:       "id",
-			UserName: "my-user-name",
+			Name:     "my-user-name",
 			FullName: "My Full Name",
 			Location: "MyLocation",
 			Company:  "My Company",
@@ -46,6 +46,11 @@ func TestInfoOutput(t *testing.T) {
 				Collaborators:  9999,
 				ParallelBuilds: 3,
 			},
+		},
+		Consumption: &hub.Consumption{
+			Seats:               0,
+			PrivateRepositories: 1,
+			Teams:               2,
 		},
 	}
 	buf := bytes.NewBuffer(nil)

@@ -67,6 +67,32 @@ func (c *Client) GetTeams(organization string) ([]Team, error) {
 	return teams, nil
 }
 
+//GetTeamsCount returns the number of teams in an organization
+func (c *Client) GetTeamsCount(organization string) (int, error) {
+	u, err := url.Parse(c.domain + fmt.Sprintf(GroupsURL, organization))
+	if err != nil {
+		return 0, err
+	}
+	q := url.Values{}
+	q.Add("page_size", "1")
+	q.Add("page", "1")
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return 0, err
+	}
+	response, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return 0, err
+	}
+	var hubResponse hubGroupResponse
+	if err := json.Unmarshal(response, &hubResponse); err != nil {
+		return 0, err
+	}
+	return hubResponse.Count, nil
+}
+
 func (c *Client) getTeamsPage(url, organization string) ([]Team, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
