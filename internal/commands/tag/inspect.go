@@ -17,21 +17,23 @@
 package tag
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/containerd/containerd/images"
-	"github.com/docker/buildx/util/imagetools"
+	"github.com/containerd/containerd/platforms"
+	"github.com/containerd/containerd/remotes"
+	"github.com/containerd/containerd/remotes/docker"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	clitypes "github.com/docker/cli/cli/config/types"
 	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/go-units"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
@@ -46,7 +48,8 @@ const (
 )
 
 type inspectOptions struct {
-	format string
+	format   string
+	platform string
 }
 
 //Image is the combination of a manifest and its config object
@@ -54,6 +57,13 @@ type Image struct {
 	Name       string
 	Manifest   ocispec.Manifest
 	Config     ocispec.Image
+	Descriptor ocispec.Descriptor
+}
+
+//Index is the combination of an OCI index and its descriptor
+type Index struct {
+	Name       string
+	Index      ocispec.Index
 	Descriptor ocispec.Descriptor
 }
 
@@ -72,55 +82,122 @@ func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string
 		},
 	}
 	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json|raw")`)
+	cmd.Flags().StringVar(&opts.platform, "platform", "", `Select a platform if the tag is a multi-architecture image`)
 	return cmd
 }
 
 func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOptions, imageRef string) error {
-	resolver := imagetools.New(imagetools.Opt{
-		Auth: &authResolver{
-			authConfig: convert(hubClient.AuthConfig),
-		},
+	var (
+		platform *ocispec.Platform
+	)
+	if opts.platform != "" {
+		p, err := platforms.Parse(opts.platform)
+		if err != nil {
+			return fmt.Errorf("invalid platform %q: %s", opts.platform, err)
+		}
+		platform = &p
+	}
+	authorizer := docker.NewDockerAuthorizer(docker.WithAuthCreds(func(string) (string, string, error) {
+		return hubClient.AuthConfig.Username, hubClient.AuthConfig.Password, nil
+	}))
+	registryHosts := docker.ConfigureDefaultRegistries(docker.WithClient(http.DefaultClient), docker.WithAuthorizer(authorizer))
+
+	resolver := docker.NewResolver(docker.ResolverOptions{
+		Hosts: registryHosts,
 	})
 
-	raw, descriptor, err := resolver.Get(hubClient.Ctx, imageRef)
-	if err != nil {
-		return err
-	}
-
+	// Parse image reference
 	ref, err := reference.ParseNormalizedNamed(imageRef)
 	if err != nil {
 		return err
 	}
 	ref = reference.TagNameOnly(ref)
 
+	// Read descriptor
+	fullName, descriptor, err := resolver.Resolve(hubClient.Ctx, ref.String())
+	if err != nil {
+		return err
+	}
+
+	raw, err := getBlob(hubClient.Ctx, resolver, fullName, descriptor)
+	if err != nil {
+		return err
+	}
+
 	switch descriptor.MediaType {
 	// case images.MediaTypeDockerSchema2Manifest, specs.MediaTypeImageManifest:
 	// TODO: handle distribution manifest and schema1
 	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
-		return formatManifestlist(streams, opts.format, raw, descriptor, imageRef)
+		return formatManifestlist(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref.Name(), platform)
 	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
 		return formatManifest(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref.Name())
 	default:
-		fmt.Println("Other mediatype")
-		fmt.Printf("%s\n", raw)
+		fmt.Fprintln(streams.Out(), ansi.Title("Unsupported mediatype"))
+		fmt.Fprintln(streams.Out(), raw)
 	}
 
 	return nil
 }
 
-func formatManifestlist(streams command.Streams, format string, raw []byte, descriptor ocispec.Descriptor, imageRef string) error {
+func getBlob(ctx context.Context, resolver remotes.Resolver, fullName string, descriptor ocispec.Descriptor) ([]byte, error) {
+	// Fetch the blob
+	fetcher, err := resolver.Fetcher(ctx, fullName)
+	if err != nil {
+		return nil, err
+	}
+
+	rc, err := fetcher.Fetch(ctx, descriptor)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rc.Close()
+	}()
+
+	// Read the blob
+	buf := bytes.NewBuffer(nil)
+	if _, err = io.Copy(buf, rc); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func formatManifestlist(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, raw []byte, descriptor ocispec.Descriptor, name string, platform *ocispec.Platform) error {
+	var index ocispec.Index
+	if err := json.Unmarshal(raw, &index); err != nil {
+		return err
+	}
+	if platform != nil {
+		return formatSelectManifest(ctx, streams, resolver, format, name, *platform, index)
+	}
+
+	image := Index{
+		Name:       name,
+		Index:      index,
+		Descriptor: descriptor,
+	}
 	switch format {
-	case "json", "raw":
+	case "raw":
 		_, err := fmt.Printf("%s", raw) // avoid newline to keep digest
 		return err
+	case "json":
+		buf, err := json.MarshalIndent(index, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprint(streams.Out(), string(buf))
+		return err
 	case "":
-		return imagetools.PrintManifestList(raw, descriptor, imageRef, streams.Out())
+		return printManifestList(streams.Out(), image)
 	default:
 		return fmt.Errorf("unsupported format type: %q", format)
 	}
 }
 
-func formatManifest(ctx context.Context, streams command.Streams, resolver *imagetools.Resolver, format string, raw []byte, descriptor ocispec.Descriptor, name string) error {
+func formatManifest(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, raw []byte, descriptor ocispec.Descriptor, name string) error {
 	image, err := readImage(ctx, resolver, raw, descriptor, name)
 	if err != nil {
 		return err
@@ -143,14 +220,35 @@ func formatManifest(ctx context.Context, streams command.Streams, resolver *imag
 	}
 }
 
-func readImage(ctx context.Context, resolver *imagetools.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, name string) (*Image, error) {
+func formatSelectManifest(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, name string, platform ocispec.Platform, index ocispec.Index) error {
+	matcher := platforms.NewMatcher(platform)
+	var selectedDescriptor *ocispec.Descriptor
+	for _, descriptor := range index.Manifests {
+		if descriptor.Platform != nil && matcher.Match(*descriptor.Platform) {
+			selectedDescriptor = &descriptor
+			break
+		}
+	}
+	if selectedDescriptor == nil {
+		return fmt.Errorf("platform %q does not match any available platform for the tag %q", platforms.Format(platform), name)
+	}
+	raw, err := getBlob(ctx, resolver, name, *selectedDescriptor)
+	if err != nil {
+		return err
+	}
+	return formatManifest(ctx, streams, resolver, format, raw, *selectedDescriptor, name)
+}
+
+func readImage(ctx context.Context, resolver remotes.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, name string) (*Image, error) {
 	var manifest ocispec.Manifest
 	if err := json.Unmarshal(rawManifest, &manifest); err != nil {
 		return nil, err
 	}
 
 	configRef := fmt.Sprintf("%s@%s", name, manifest.Config.Digest)
-	configRaw, err := resolver.GetDescriptor(ctx, configRef, manifest.Config)
+
+	configRaw, err := getBlob(ctx, resolver, configRef, manifest.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -172,13 +270,39 @@ func printImage(out io.Writer, image *Image) error {
 	return printLayers(out, image)
 }
 
+func printManifestList(out io.Writer, image Index) error {
+	fmt.Fprintf(out, ansi.Title("Manifest List:")+"\n")
+	fmt.Fprintf(out, ansi.Key("Name:")+"\t\t%s\n", image.Name)
+	fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", image.Descriptor.MediaType)
+	fmt.Fprintf(out, ansi.Key("Digest:")+"\t\t%s\n", image.Descriptor.Digest)
+	if len(image.Index.Annotations) > 0 {
+		printAnnotations(out, image.Index.Annotations)
+	} else if len(image.Descriptor.Annotations) > 0 {
+		printAnnotations(out, image.Descriptor.Annotations)
+	}
+
+	fmt.Fprintf(out, "\n")
+
+	fmt.Fprintf(out, ansi.Title("Manifests:")+"\n")
+	for i, m := range image.Index.Manifests {
+		if i != 0 {
+			fmt.Fprintln(out)
+		}
+		fmt.Fprintf(out, ansi.Key("Name:")+"\t\t%s\n", fmt.Sprintf("%s@%s", image.Name, m.Digest))
+		fmt.Fprintf(out, ansi.Key("Mediatype:")+"\t%s\n", m.MediaType)
+		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", formatPlatform(m.Platform))
+	}
+
+	return nil
+}
+
 func printManifest(out io.Writer, image *Image) error {
 	fmt.Fprintf(out, ansi.Title("Manifest:")+"\n")
 	fmt.Fprintf(out, ansi.Key("Name:")+"\t\t%s\n", image.Name)
 	fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", image.Descriptor.MediaType)
 	fmt.Fprintf(out, ansi.Key("Digest:")+"\t\t%s\n", image.Descriptor.Digest)
 	if image.Descriptor.Platform != nil {
-		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", getPlatform(image.Descriptor.Platform))
+		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", formatPlatform(image.Descriptor.Platform))
 	}
 	if len(image.Manifest.Annotations) > 0 {
 		printAnnotations(out, image.Manifest.Annotations)
@@ -267,18 +391,11 @@ func printLayers(out io.Writer, image *Image) error {
 	return nil
 }
 
-func getPlatform(platform *ocispec.Platform) string {
-	result := fmt.Sprintf("%s/%s", platform.OS, platform.Architecture)
-	if platform.Variant != "" {
-		result += "/" + platform.Variant
+func formatPlatform(platform *ocispec.Platform) string {
+	if platform == nil {
+		return ""
 	}
-	if platform.OSVersion != "" {
-		result += "/" + platform.OSVersion
-	}
-	if len(platform.OSFeatures) > 0 {
-		result += "/" + strings.Join(platform.OSFeatures, "/")
-	}
-	return result
+	return platforms.Format(*platform)
 }
 
 func cleanCreatedBy(history string) string {
@@ -310,26 +427,6 @@ func printAnnotations(out io.Writer, annotations map[string]string) {
 	keys := sortMapKeys(annotations)
 	for _, k := range keys {
 		fmt.Fprintf(out, "%s:\t%s\n", k, annotations[k])
-	}
-}
-
-type authResolver struct {
-	authConfig clitypes.AuthConfig
-}
-
-func (a *authResolver) GetAuthConfig(registryHostname string) (clitypes.AuthConfig, error) {
-	return a.authConfig, nil
-}
-
-func convert(config types.AuthConfig) clitypes.AuthConfig {
-	return clitypes.AuthConfig{
-		Username:      config.Username,
-		Password:      config.Password,
-		Auth:          config.Auth,
-		Email:         config.Email,
-		ServerAddress: config.ServerAddress,
-		IdentityToken: config.IdentityToken,
-		RegistryToken: config.RegistryToken,
 	}
 }
 

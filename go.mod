@@ -9,7 +9,6 @@ require (
 	github.com/cli/cli v1.1.0
 	github.com/cloudflare/cfssl v1.4.1 // indirect
 	github.com/containerd/containerd v1.4.3
-	github.com/docker/buildx v0.5.1
 	github.com/docker/cli v20.10.1+incompatible
 	github.com/docker/compose-cli v1.0.5-0.20201215113846-10a19b115968
 	github.com/docker/distribution v2.7.1+incompatible
@@ -34,5 +33,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gotest.tools/v3 v3.0.3
 )
-
-replace github.com/docker/distribution => github.com/docker/distribution v0.0.0-20201114020330-551158e6008e
