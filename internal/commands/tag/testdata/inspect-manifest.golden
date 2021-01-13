@@ -1,5 +1,5 @@
 Manifest:
-Name:		docker.io/library/image
+Name:		image:latest
 MediaType:	mediatype/manifest
 Digest:		sha256:abcdef
 Platform:	os/arch/variant/osversion/feature1/feature2

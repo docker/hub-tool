@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/distribution/reference"
 	"github.com/opencontainers/image-spec/specs-go"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"gotest.tools/v3/assert"
@@ -95,12 +94,54 @@ func TestPrintImage(t *testing.T) {
 			Variant:      "variant",
 		},
 	}
-	ref, err := reference.ParseDockerRef("image:latest")
-	assert.NilError(t, err)
-	image := Image{ref.Name(), manifest, config, manifestDescriptor}
+	image := Image{"image:latest", manifest, config, manifestDescriptor}
 
 	out := bytes.NewBuffer(nil)
-	err = printImage(out, &image)
+	err := printImage(out, &image)
 	assert.NilError(t, err)
-	golden.Assert(t, out.String(), "printimage.golden")
+	golden.Assert(t, out.String(), "inspect-manifest.golden")
+}
+
+func TestPrintIndex(t *testing.T) {
+	index := ocispec.Index{
+		Versioned: specs.Versioned{},
+		Manifests: []ocispec.Descriptor{
+			{
+				MediaType:   "mediatype/manifest",
+				Digest:      "sha256:abcdef",
+				Annotations: nil,
+				Platform: &ocispec.Platform{
+					Architecture: "arch",
+					OS:           "os",
+					OSVersion:    "osversion",
+					OSFeatures:   []string{"feature1", "feature2"},
+					Variant:      "variant",
+				},
+			},
+			{
+				MediaType:   "mediatype/manifest",
+				Digest:      "sha256:beef",
+				Annotations: nil,
+				Platform: &ocispec.Platform{
+					Architecture: "arch2",
+					OS:           "os2",
+				},
+			},
+		},
+		Annotations: map[string]string{
+			"annotation1": "value1",
+			"annotation2": "value2",
+		},
+	}
+	indexDescriptor := ocispec.Descriptor{
+		MediaType: "mediatype/ociindex",
+		Digest:    "sha256:abcdef",
+		Size:      789,
+	}
+	image := Index{"image:latest", index, indexDescriptor}
+
+	out := bytes.NewBuffer(nil)
+	err := printManifestList(out, image)
+	assert.NilError(t, err)
+	golden.Assert(t, out.String(), "inspect-manifest-list.golden")
 }
