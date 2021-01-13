@@ -23,6 +23,10 @@ perform Hub maintenance tasks.
   [here](https://github.com/docker/hub-tool/releases)
 - Extract the package and place the `hub-tool` binary somewhere in your `PATH`
 
+OR
+
+- Install from sources: `go install github.com/docker/hub-tool`
+
 ### Login to Docker Hub
 
 Login to the [Docker Hub](https://hub.docker.com) using your username and
