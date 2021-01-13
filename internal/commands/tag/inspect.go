@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/containerd/containerd/images"
+	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
 	"github.com/docker/cli/cli"
@@ -47,7 +48,8 @@ const (
 )
 
 type inspectOptions struct {
-	format string
+	format   string
+	platform string
 }
 
 //Image is the combination of a manifest and its config object
@@ -80,10 +82,21 @@ func newInspectCmd(streams command.Streams, hubClient *hub.Client, parent string
 		},
 	}
 	cmd.Flags().StringVar(&opts.format, "format", "", `Print original manifest ("json|raw")`)
+	cmd.Flags().StringVar(&opts.platform, "platform", "", `Select a platform if the tag is a multi-architecture image`)
 	return cmd
 }
 
 func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOptions, imageRef string) error {
+	var (
+		platform *ocispec.Platform
+	)
+	if opts.platform != "" {
+		p, err := platforms.Parse(opts.platform)
+		if err != nil {
+			return fmt.Errorf("invalid platform %q: %s", opts.platform, err)
+		}
+		platform = &p
+	}
 	authorizer := docker.NewDockerAuthorizer(docker.WithAuthCreds(func(string) (string, string, error) {
 		return hubClient.AuthConfig.Username, hubClient.AuthConfig.Password, nil
 	}))
@@ -115,12 +128,12 @@ func runInspect(streams command.Streams, hubClient *hub.Client, opts inspectOpti
 	// case images.MediaTypeDockerSchema2Manifest, specs.MediaTypeImageManifest:
 	// TODO: handle distribution manifest and schema1
 	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
-		return formatManifestlist(streams, opts.format, raw, descriptor, ref.Name())
+		return formatManifestlist(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref.Name(), platform)
 	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
 		return formatManifest(hubClient.Ctx, streams, resolver, opts.format, raw, descriptor, ref.Name())
 	default:
-		fmt.Println("Other mediatype")
-		fmt.Printf("%s\n", raw)
+		fmt.Fprintln(streams.Out(), ansi.Title("Unsupported mediatype"))
+		fmt.Fprintln(streams.Out(), raw)
 	}
 
 	return nil
@@ -150,13 +163,18 @@ func getBlob(ctx context.Context, resolver remotes.Resolver, fullName string, de
 	return buf.Bytes(), nil
 }
 
-func formatManifestlist(streams command.Streams, format string, raw []byte, descriptor ocispec.Descriptor, imageRef string) error {
+func formatManifestlist(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, raw []byte, descriptor ocispec.Descriptor, name string, platform *ocispec.Platform) error {
 	var index ocispec.Index
 	if err := json.Unmarshal(raw, &index); err != nil {
 		return err
 	}
+	if platform != nil {
+		return formatSelectManifest(ctx, streams, resolver, format, name, *platform, index)
+	}
+
 	image := Index{
-		Name:       imageRef,
+		Name:       name,
 		Index:      index,
 		Descriptor: descriptor,
 	}
@@ -178,7 +196,8 @@ func formatManifestlist(streams command.Streams, format string, raw []byte, desc
 	}
 }
 
-func formatManifest(ctx context.Context, streams command.Streams, resolver remotes.Resolver, format string, raw []byte, descriptor ocispec.Descriptor, name string) error {
+func formatManifest(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, raw []byte, descriptor ocispec.Descriptor, name string) error {
 	image, err := readImage(ctx, resolver, raw, descriptor, name)
 	if err != nil {
 		return err
@@ -199,6 +218,26 @@ func formatManifest(ctx context.Context, streams command.Streams, resolver remot
 	default:
 		return fmt.Errorf("unsupported format type: %q", format)
 	}
+}
+
+func formatSelectManifest(ctx context.Context, streams command.Streams, resolver remotes.Resolver,
+	format string, name string, platform ocispec.Platform, index ocispec.Index) error {
+	matcher := platforms.NewMatcher(platform)
+	var selectedDescriptor *ocispec.Descriptor
+	for _, descriptor := range index.Manifests {
+		if descriptor.Platform != nil && matcher.Match(*descriptor.Platform) {
+			selectedDescriptor = &descriptor
+			break
+		}
+	}
+	if selectedDescriptor == nil {
+		return fmt.Errorf("platform %q does not match any available platform for the tag %q", platforms.Format(platform), name)
+	}
+	raw, err := getBlob(ctx, resolver, name, *selectedDescriptor)
+	if err != nil {
+		return err
+	}
+	return formatManifest(ctx, streams, resolver, format, raw, *selectedDescriptor, name)
 }
 
 func readImage(ctx context.Context, resolver remotes.Resolver, rawManifest []byte, descriptor ocispec.Descriptor, name string) (*Image, error) {
@@ -251,7 +290,7 @@ func printManifestList(out io.Writer, image Index) error {
 		}
 		fmt.Fprintf(out, ansi.Key("Name:")+"\t\t%s\n", fmt.Sprintf("%s@%s", image.Name, m.Digest))
 		fmt.Fprintf(out, ansi.Key("Mediatype:")+"\t%s\n", m.MediaType)
-		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", getPlatform(m.Platform))
+		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", formatPlatform(m.Platform))
 	}
 
 	return nil
@@ -263,7 +302,7 @@ func printManifest(out io.Writer, image *Image) error {
 	fmt.Fprintf(out, ansi.Key("MediaType:")+"\t%s\n", image.Descriptor.MediaType)
 	fmt.Fprintf(out, ansi.Key("Digest:")+"\t\t%s\n", image.Descriptor.Digest)
 	if image.Descriptor.Platform != nil {
-		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", getPlatform(image.Descriptor.Platform))
+		fmt.Fprintf(out, ansi.Key("Platform:")+"\t%s\n", formatPlatform(image.Descriptor.Platform))
 	}
 	if len(image.Manifest.Annotations) > 0 {
 		printAnnotations(out, image.Manifest.Annotations)
@@ -352,18 +391,11 @@ func printLayers(out io.Writer, image *Image) error {
 	return nil
 }
 
-func getPlatform(platform *ocispec.Platform) string {
-	result := fmt.Sprintf("%s/%s", platform.OS, platform.Architecture)
-	if platform.Variant != "" {
-		result += "/" + platform.Variant
+func formatPlatform(platform *ocispec.Platform) string {
+	if platform == nil {
+		return ""
 	}
-	if platform.OSVersion != "" {
-		result += "/" + platform.OSVersion
-	}
-	if len(platform.OSFeatures) > 0 {
-		result += "/" + strings.Join(platform.OSFeatures, "/")
-	}
-	return result
+	return platforms.Format(*platform)
 }
 
 func cleanCreatedBy(history string) string {

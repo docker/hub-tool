@@ -9,7 +9,7 @@ annotation2:	value2
 Manifests:
 Name:		image:latest@sha256:abcdef
 Mediatype:	mediatype/manifest
-Platform:	os/arch/variant/osversion/feature1/feature2
+Platform:	os/arch/variant
 
 Name:		image:latest@sha256:beef
 Mediatype:	mediatype/manifest

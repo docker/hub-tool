@@ -2,7 +2,7 @@ Manifest:
 Name:		image:latest
 MediaType:	mediatype/manifest
 Digest:		sha256:abcdef
-Platform:	os/arch/variant/osversion/feature1/feature2
+Platform:	os/arch/variant
 Annotations:
 annotation1:	value1
 annotation2:	value2

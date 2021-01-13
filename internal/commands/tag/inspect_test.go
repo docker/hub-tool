@@ -89,8 +89,6 @@ func TestPrintImage(t *testing.T) {
 		Platform: &ocispec.Platform{
 			Architecture: "arch",
 			OS:           "os",
-			OSVersion:    "osversion",
-			OSFeatures:   []string{"feature1", "feature2"},
 			Variant:      "variant",
 		},
 	}
@@ -113,8 +111,6 @@ func TestPrintIndex(t *testing.T) {
 				Platform: &ocispec.Platform{
 					Architecture: "arch",
 					OS:           "os",
-					OSVersion:    "osversion",
-					OSFeatures:   []string{"feature1", "feature2"},
 					Variant:      "variant",
 				},
 			},
