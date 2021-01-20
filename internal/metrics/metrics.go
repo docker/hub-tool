@@ -19,7 +19,7 @@ package metrics
 import (
 	"strings"
 
-	"github.com/docker/compose-cli/metrics"
+	"github.com/docker/compose-cli/cli/metrics"
 )
 
 //Send emit a metric message to the local Desktop metric listener
