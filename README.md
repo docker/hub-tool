@@ -61,6 +61,20 @@ ensure that its UX is good. Remember that this is an experiment with the goal of
 incorporating the learnings into the Docker CLI so it has some rough edges and
 it's not meant to be a final product.
 
+To get started wtih contributing, run `make help`. The commands that standout as
+helpful for new contributors are 
+
+```
+make lint      => make sure all files are formatted with 'go fmt'
+make test-unit => run unit tests
+make e2e       => run end-to-end tests
+make           => build it all for the local OS
+```
+
+For rapid iteration on running the project, use `go run main.go <args>`.
+Additional logging can be enabled by using the `--debug` or `--trace` flags.
+
+
 ### Feedback
 
 Please leave your feedback in the
