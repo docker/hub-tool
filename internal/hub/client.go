@@ -218,6 +218,8 @@ func (c *Client) Login(username string, password string, twoFactorCodeProvider f
 		return "", "", err
 	}
 
+	log.Debugf("Login response %d on: %s", resp.StatusCode, resp.Request.URL)
+
 	// Login is OK, return the token
 	if resp.StatusCode == http.StatusOK {
 		creds := tokenResponse{}
@@ -264,6 +266,7 @@ func (c *Client) getTwoFactorToken(token string, twoFactorCodeProvider func() (s
 	if err != nil {
 		return "", "", err
 	}
+
 	resp, err := c.doRawRequest(req)
 	if err != nil {
 		return "", "", err
@@ -274,6 +277,10 @@ func (c *Client) getTwoFactorToken(token string, twoFactorCodeProvider func() (s
 	if err != nil {
 		return "", "", err
 	}
+
+	log.Debugf("Login response %d on: %s", resp.StatusCode, req.URL)
+	log.Tracef("HTTP response: %+v", resp)
+	log.Tracef("HTTP response body: %s", string(buf))
 
 	// Login is OK, return the token
 	if resp.StatusCode == http.StatusOK {
@@ -336,6 +343,9 @@ func (c *Client) doRawRequest(req *http.Request, reqOps ...RequestOp) (*http.Res
 	if c.Ctx != nil {
 		req = req.WithContext(c.Ctx)
 	}
+
+	log.Debugf("HTTP %s on: %s", req.Method, req.URL)
+	log.Tracef("HTTP request: %+v", req)
 	return http.DefaultClient.Do(req)
 }
 
