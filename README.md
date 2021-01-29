@@ -25,7 +25,7 @@ perform Hub maintenance tasks.
 
 OR
 
-- Install from sources: `go install github.com/docker/hub-tool`
+- Install from sources: `GO111MODULE=on go get github.com/docker/hub-tool`
 
 ### Login to Docker Hub
 
