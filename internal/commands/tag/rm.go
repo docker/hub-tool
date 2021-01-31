@@ -25,12 +25,12 @@ import (
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/distribution/reference"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-
 	"github.com/docker/hub-tool/internal/ansi"
+	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -40,8 +40,6 @@ const (
 type rmOptions struct {
 	force bool
 }
-
-var errCanceled = errors.New("canceled")
 
 func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
@@ -55,7 +53,7 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := runRm(cmd.Context(), streams, hubClient, opts, args[0])
-			if err == nil || err == errCanceled {
+			if err == nil || err == errdef.ErrCanceled {
 				return nil
 			}
 			return err
@@ -89,7 +87,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 		input := ""
 		select {
 		case <-ctx.Done():
-			return errCanceled
+			return errdef.ErrCanceled
 		case input = <-userIn:
 		}
 		if strings.ToLower(input) != "y" {

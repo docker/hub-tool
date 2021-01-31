@@ -32,11 +32,9 @@ import (
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/hub"
 )
-
-// ErrCanceled represents a normally canceled operation
-var ErrCanceled = errors.New("canceled")
 
 // RunLogin logs the user and asks for the 2FA code if needed
 func RunLogin(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store, candidateUsername string) error {
@@ -87,7 +85,7 @@ func readClearText(ctx context.Context, streams command.Streams, prompt string) 
 	input := ""
 	select {
 	case <-ctx.Done():
-		return "", ErrCanceled
+		return "", errdef.ErrCanceled
 	case input = <-userIn:
 	}
 	return input, nil

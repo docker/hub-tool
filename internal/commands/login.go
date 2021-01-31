@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/login"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -50,7 +51,7 @@ func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hu
 			}
 			err := login.RunLogin(cmd.Context(), streams, hubClient, store, username)
 			if err != nil {
-				if err == login.ErrCanceled {
+				if err == errdef.ErrCanceled {
 					return nil
 				}
 				return err
