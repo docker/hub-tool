@@ -48,9 +48,14 @@ func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hu
 			if len(args) > 0 {
 				username = args[0]
 			}
-			if err := login.RunLogin(cmd.Context(), streams, hubClient, store, username); err != nil {
+			err := login.RunLogin(cmd.Context(), streams, hubClient, store, username)
+			if err != nil {
+				if err == login.ErrCanceled {
+					return nil
+				}
 				return err
 			}
+
 			fmt.Fprintln(streams.Out(), ansi.Info("Login Succeeded"))
 			return nil
 		},
