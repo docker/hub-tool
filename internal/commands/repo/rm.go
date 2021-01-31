@@ -20,8 +20,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/hub-tool/internal/errdef"
 	"strings"
+
+	"github.com/docker/hub-tool/internal/errdef"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
