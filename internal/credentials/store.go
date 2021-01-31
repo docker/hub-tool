@@ -124,8 +124,24 @@ func (s *store) Store(auth Auth) error {
 	})
 }
 
+func (s *store) exists(serverAddress string) (bool, error) {
+	authConfig, err := s.s.Get(serverAddress)
+	if err != nil {
+		return false, err
+	}
+
+	if (clitypes.AuthConfig{}) == authConfig {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (s *store) Erase() error {
 	if err := s.s.Erase(hubToolKey); err != nil {
+		if found, findErr := s.exists(hubToolKey); findErr == nil && !found {
+			return nil
+		}
 		return err
 	}
 	if err := s.s.Erase(hubToolRefreshTokenKey); err != nil {
