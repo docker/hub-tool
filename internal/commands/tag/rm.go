@@ -41,7 +41,7 @@ type rmOptions struct {
 	force bool
 }
 
-var ErrCanceled = errors.New("canceled")
+var errCanceled = errors.New("canceled")
 
 func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
@@ -55,7 +55,7 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := runRm(cmd.Context(), streams, hubClient, opts, args[0])
-			if err == nil || err == ErrCanceled {
+			if err == nil || err == errCanceled {
 				return nil
 			}
 			return err
@@ -89,7 +89,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 		input := ""
 		select {
 		case <-ctx.Done():
-			return ErrCanceled
+			return errCanceled
 		case input = <-userIn:
 		}
 		if strings.ToLower(input) != "y" {

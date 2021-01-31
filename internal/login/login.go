@@ -35,6 +35,7 @@ import (
 	"github.com/docker/hub-tool/internal/hub"
 )
 
+// ErrCanceled represents a normally canceled operation
 var ErrCanceled = errors.New("canceled")
 
 // RunLogin logs the user and asks for the 2FA code if needed
