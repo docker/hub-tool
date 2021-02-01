@@ -32,6 +32,7 @@ import (
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/hub"
 )
 
@@ -84,7 +85,7 @@ func readClearText(ctx context.Context, streams command.Streams, prompt string) 
 	input := ""
 	select {
 	case <-ctx.Done():
-		return "", errors.New("canceled")
+		return "", errdef.ErrCanceled
 	case input = <-userIn:
 	}
 	return input, nil

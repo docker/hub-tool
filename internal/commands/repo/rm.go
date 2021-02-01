@@ -19,9 +19,12 @@ package repo
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/docker/hub-tool/internal/errdef"
 
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
@@ -52,7 +55,11 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 			metrics.Send(parent, rmName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRm(cmd.Context(), streams, hubClient, opts, args[0])
+			err := runRm(cmd.Context(), streams, hubClient, opts, args[0])
+			if err == nil || errors.Is(err, errdef.ErrCanceled) {
+				return nil
+			}
+			return err
 		},
 	}
 	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Force deletion of the repository")
@@ -86,7 +93,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 		input := ""
 		select {
 		case <-ctx.Done():
-			return errors.New("canceled")
+			return errdef.ErrCanceled
 		case input = <-userIn:
 		}
 		if input != namedRef.Name() {

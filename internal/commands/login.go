@@ -19,12 +19,15 @@ package commands
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/login"
 	"github.com/docker/hub-tool/internal/metrics"
@@ -48,9 +51,14 @@ func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hu
 			if len(args) > 0 {
 				username = args[0]
 			}
-			if err := login.RunLogin(cmd.Context(), streams, hubClient, store, username); err != nil {
+			err := login.RunLogin(cmd.Context(), streams, hubClient, store, username)
+			if err != nil {
+				if errors.Is(err, errdef.ErrCanceled) {
+					return nil
+				}
 				return err
 			}
+
 			fmt.Fprintln(streams.Out(), ansi.Info("Login Succeeded"))
 			return nil
 		},
