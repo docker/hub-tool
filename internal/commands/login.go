@@ -19,6 +19,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/spf13/cobra"
@@ -51,7 +53,7 @@ func newLoginCmd(streams command.Streams, store credentials.Store, hubClient *hu
 			}
 			err := login.RunLogin(cmd.Context(), streams, hubClient, store, username)
 			if err != nil {
-				if err == errdef.ErrCanceled {
+				if errors.Is(err, errdef.ErrCanceled) {
 					return nil
 				}
 				return err
