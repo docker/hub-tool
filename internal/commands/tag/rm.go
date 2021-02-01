@@ -53,7 +53,7 @@ func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *co
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := runRm(cmd.Context(), streams, hubClient, opts, args[0])
-			if err == nil || err == errdef.ErrCanceled {
+			if err == nil || errors.Is(err, errdef.ErrCanceled) {
 				return nil
 			}
 			return err
