@@ -9,10 +9,10 @@ require (
 	github.com/cli/cli v1.1.0
 	github.com/cloudflare/cfssl v1.4.1 // indirect
 	github.com/containerd/containerd v1.4.3
-	github.com/docker/cli v20.10.1+incompatible
+	github.com/docker/cli v20.10.3+incompatible
 	github.com/docker/compose-cli v1.0.5-0.20201215113846-10a19b115968
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/docker/docker v20.10.1+incompatible
+	github.com/docker/docker v20.10.3+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/fvbommel/sortorder v1.0.2 // indirect
@@ -30,6 +30,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gotest.tools/v3 v3.0.3
 )
