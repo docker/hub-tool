@@ -98,5 +98,5 @@ func printTeams(out io.Writer, values interface{}) error {
 		tw.Line()
 	}
 
-	return nil
+	return tw.Flush()
 }
