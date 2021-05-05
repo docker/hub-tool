@@ -59,6 +59,7 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 		DisableFlagsInUseLine: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if flags.trace {
+				log.Warn("Sensitive data can be logged when using the `--trace` flag")
 				log.SetLevel(log.TraceLevel)
 			} else if flags.verbose {
 				log.SetLevel(log.DebugLevel)
@@ -80,14 +81,8 @@ func NewRootCmd(streams command.Streams, hubClient *hub.Client, store credential
 Please login to Docker Hub using the "hub-tool login" command.`))
 			}
 
-			if cmd.Annotations["sudo"] == "true" {
-				if err := tryLogin(cmd.Context(), streams, hubClient, ac, store); err != nil {
-					return err
-				}
-				return nil
-			}
-
 			if ac.TokenExpired() {
+				log.Debugln("Token is expired, renewing")
 				return tryLogin(cmd.Context(), streams, hubClient, ac, store)
 			}
 			return nil
