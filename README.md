@@ -90,7 +90,7 @@ output into the `./bin` directory:
 
 ```console
 $ make
-docker build --build-arg GO_VERSION=1.15.3 --build-arg ALPINE_VERSION=3.12.0 --build-arg GOLANGCI_LINT_VERSION=v1.31.0-alpine --build-arg TAG_NAME= --build-arg GOTESTSUM_VERSION=0.5.2 --build-arg BINARY_NAME=hub-tool --build-arg BINARY=hub-tool . \
+docker build --build-arg GO_VERSION=1.16.3 --build-arg ALPINE_VERSION=3.12.0 --build-arg GOLANGCI_LINT_VERSION=v1.31.0-alpine --build-arg TAG_NAME= --build-arg GOTESTSUM_VERSION=0.5.2 --build-arg BINARY_NAME=hub-tool --build-arg BINARY=hub-tool . \
                 --output type=local,dest=./bin \
                 --platform local \
                 --target hub

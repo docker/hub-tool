@@ -16,7 +16,7 @@
 #   limitations under the License.
 
 
-ARG GO_VERSION=1.15.6-alpine
+ARG GO_VERSION=1.16.3-alpine
 ARG CLI_VERSION=20.10.2
 ARG ALPINE_VERSION=3.12.2
 ARG GOLANGCI_LINT_VERSION=v1.33.0-alpine
