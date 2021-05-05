@@ -29,7 +29,7 @@ E2E_ENV:=--env E2E_HUB_USERNAME \
     --env E2E_HUB_TOKEN \
     --env E2E_TEST_NAME
 
-UNIX_PLATFORMS:=linux/amd64 linux/arm linux/arm64 darwin/amd64
+UNIX_PLATFORMS:=linux/amd64 linux/arm linux/arm64 darwin/amd64 darwin/arm64
 
 TMPDIR_WIN_PKG:=$(shell mktemp -d)
 
