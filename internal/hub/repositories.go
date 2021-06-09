@@ -39,6 +39,7 @@ type Repository struct {
 	PullCount   int
 	StarCount   int
 	IsPrivate   bool
+	IsAutomated bool
 }
 
 //GetRepositories lists all the repositories a user can access
@@ -107,6 +108,7 @@ func (c *Client) getRepositoriesPage(url, account string) ([]Repository, int, st
 			PullCount:   result.PullCount,
 			StarCount:   result.StarCount,
 			IsPrivate:   result.IsPrivate,
+			IsAutomated: result.IsAutomated,
 		}
 		repos = append(repos, repo)
 	}

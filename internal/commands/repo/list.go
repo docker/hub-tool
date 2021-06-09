@@ -62,6 +62,10 @@ var (
 			s := fmt.Sprintf("%v", r.IsPrivate)
 			return s, len(s)
 		}},
+		{"AUTOMATED", func(r hub.Repository) (string, int) {
+			s := fmt.Sprintf("%v", r.IsAutomated)
+			return s, len(s)
+		}},
 	}
 )
 
