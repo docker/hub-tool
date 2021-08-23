@@ -33,6 +33,8 @@ const (
 	OrganizationsURL = "/v2/user/orgs/"
 	// OrganizationInfoURL path to the Hub API returning organization info
 	OrganizationInfoURL = "/v2/orgs/%s"
+	// OrganizationSettingsURL path to the Hub API returning organization settings
+	OrganizationSettingsURL = "/v2/orgs/%s/settings"
 )
 
 //Organization represents a Docker Hub organization
@@ -98,6 +100,30 @@ func (c *Client) GetOrganizationInfo(orgname string) (*Account, error) {
 		Location: hubResponse.Location,
 		Company:  hubResponse.Company,
 		Joined:   hubResponse.DateJoined,
+	}, nil
+}
+
+//GetOrganizationSettings returns organization settings
+func (c *Client) GetOrganizationSettings(orgname string) (*OrgSettings, error) {
+	u, err := url.Parse(c.domain + fmt.Sprintf(OrganizationSettingsURL, orgname))
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return nil, err
+	}
+	var hubResponse hubOrgSettingsResponse
+	if err := json.Unmarshal(response, &hubResponse); err != nil {
+		return nil, err
+	}
+
+	return &OrgSettings{
+		RestrictedImages: hubResponse.RestrictedImages,
 	}, nil
 }
 
@@ -203,4 +229,15 @@ type hubOrgInfoResponse struct {
 	ProfileURL    string    `json:"profile_url"`
 	DateJoined    time.Time `json:"date_joined"`
 	Type          string    `json:"type"`
+}
+
+type hubOrgSettingsResponse struct {
+	RestrictedImages RestrictedImagesSettings `json:"restricted_images"`
+}
+
+// RestrictedImagesSettings define organization settings regarding Restricted Images Access
+type RestrictedImagesSettings struct {
+	Enabled                 bool `json:"enabled"`
+	AllowOfficialImages     bool `json:"allow_official_images"`
+	AllowVerifiedPublishers bool `json:"allow_verified_publishers"`
 }

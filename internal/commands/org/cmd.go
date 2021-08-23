@@ -41,6 +41,7 @@ func NewOrgCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 		newListCmd(streams, hubClient, orgName),
 		newMembersCmd(streams, hubClient, orgName),
 		newTeamsCmd(streams, hubClient, orgName),
+		newSettingsCmd(streams, hubClient, orgName),
 	)
 	return cmd
 }

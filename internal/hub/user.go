@@ -38,6 +38,11 @@ type Account struct {
 	Joined   time.Time
 }
 
+//OrgSettings represents settings for an organization
+type OrgSettings struct {
+	RestrictedImages RestrictedImagesSettings
+}
+
 //GetUserInfo returns the information on the user retrieved from Hub
 func (c *Client) GetUserInfo() (*Account, error) {
 	u, err := url.Parse(c.domain + UserURL)
