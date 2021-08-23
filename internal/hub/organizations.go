@@ -123,9 +123,7 @@ func (c *Client) GetOrganizationSettings(orgname string) (*OrgSettings, error) {
 	}
 
 	return &OrgSettings{
-		RestrictedImageAccessEnabled: hubResponse.RestrictedImageAccessEnabled,
-		OfficialImages:               hubResponse.OfficialImages,
-		VerifiedPublishers:           hubResponse.VerifiedPublishers,
+		RestrictedImages: hubResponse.RestrictedImages,
 	}, nil
 }
 
@@ -234,7 +232,12 @@ type hubOrgInfoResponse struct {
 }
 
 type hubOrgSettingsResponse struct {
-	RestrictedImageAccessEnabled bool `json:"restrictedImageAccess"`
-	VerifiedPublishers           bool `json:"verifiedPublishers"`
-	OfficialImages               bool `json:"officialImages"`
+	RestrictedImages RestrictedImagesSettings `json:"restricted_images"`
+}
+
+// RestrictedImagesSettings define organization settings regarding Restricted Images Access
+type RestrictedImagesSettings struct {
+	Enabled                 bool `json:"enabled"`
+	AllowOfficialImages     bool `json:"allow_official_images"`
+	AllowVerifiedPublishers bool `json:"allow_verified_publishers"`
 }

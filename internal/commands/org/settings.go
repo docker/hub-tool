@@ -74,13 +74,13 @@ func printSettings(out io.Writer, value interface{}) error {
 	settings := value.(hub.OrgSettings)
 
 	// print user info
-	fmt.Fprintf(out, ansi.Key("Restricted Images Access:               ")+"%s\n", enabled(settings.RestrictedImageAccessEnabled))
+	fmt.Fprintf(out, ansi.Key("Restricted Images Access:               ")+"%s\n", enabled(settings.RestrictedImages.Enabled))
 	color := ansi.Key
-	if !settings.RestrictedImageAccessEnabled {
+	if !settings.RestrictedImages.Enabled {
 		color = utils.Gray
 	}
-	fmt.Fprintf(out, color("Allow use of Official images:           ")+"%s\n", enabled(settings.OfficialImages))
-	fmt.Fprintf(out, color("Allow use of Verified Publisher images: ")+"%s\n", enabled(settings.VerifiedPublishers))
+	fmt.Fprintf(out, color("Allow use of Official images:           ")+"%s\n", enabled(settings.RestrictedImages.AllowOfficialImages))
+	fmt.Fprintf(out, color("Allow use of Verified Publisher images: ")+"%s\n", enabled(settings.RestrictedImages.AllowVerifiedPublishers))
 	return nil
 }
 

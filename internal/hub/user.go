@@ -40,9 +40,7 @@ type Account struct {
 
 //OrgSettings represents settings for an organization
 type OrgSettings struct {
-	RestrictedImageAccessEnabled bool `json:"restrictedImageAccess"`
-	VerifiedPublishers           bool `json:"verifiedPublishers"`
-	OfficialImages               bool `json:"officialImages"`
+	RestrictedImages RestrictedImagesSettings
 }
 
 //GetUserInfo returns the information on the user retrieved from Hub
