@@ -92,26 +92,31 @@ func (c *Client) GetRateLimits() (*RateLimits, error) {
 }
 
 func tryGetToken(c *Client) (string, error) {
-	token, err := c.getToken(c.password)
+	token, err := c.getToken("", true)
 	if err != nil {
-		token, err = c.getToken(c.refreshToken)
+		token, err = c.getToken(c.password, false)
 		if err != nil {
-			token, err = c.getToken(c.token)
+			token, err = c.getToken(c.refreshToken, false)
 			if err != nil {
-				return "", err
+				token, err = c.getToken(c.token, false)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 	}
 	return token, nil
 }
 
-func (c *Client) getToken(password string) (string, error) {
+func (c *Client) getToken(password string, anonymous bool) (string, error) {
 	req, err := http.NewRequest("GET", first, nil)
 	if err != nil {
 		return "", err
 	}
 
-	req.Header.Add("Authorization", "Basic "+basicAuth(c.account, password))
+	if !anonymous {
+		req.Header.Add("Authorization", "Basic "+basicAuth(c.account, password))
+	}
 	resp, err := c.doRawRequest(req)
 	if err != nil {
 		return "", err
