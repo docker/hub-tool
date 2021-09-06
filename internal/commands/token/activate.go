@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"
-	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/pkg/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 )
 

@@ -27,7 +27,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/errdef"
-	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/pkg/hub"
 	"github.com/docker/hub-tool/internal/metrics"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

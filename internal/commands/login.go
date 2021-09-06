@@ -28,7 +28,7 @@ import (
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/errdef"
-	"github.com/docker/hub-tool/internal/hub"
+	"github.com/docker/hub-tool/pkg/hub"
 	"github.com/docker/hub-tool/internal/login"
 	"github.com/docker/hub-tool/internal/metrics"
 )
