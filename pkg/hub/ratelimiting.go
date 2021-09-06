@@ -36,10 +36,15 @@ type RateLimits struct {
 	Source          *string `json:",omitempty"`
 }
 
-const (
+var (
 	first  = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull"
 	second = "https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest"
 )
+
+func SetURLs(newFirst, newSecond string) {
+	first = newFirst
+	second = newSecond
+}
 
 // GetRateLimits returns the rate limits for the authenticated user
 func (c *Client) GetRateLimits() (*RateLimits, error) {
