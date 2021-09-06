@@ -41,6 +41,7 @@ var (
 	second = "https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest"
 )
 
+// SetURLs change the base urls used to check ratelimiting values
 func SetURLs(newFirst, newSecond string) {
 	first = newFirst
 	second = newSecond
