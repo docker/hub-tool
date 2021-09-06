@@ -29,10 +29,11 @@ import (
 
 // RateLimits ...
 type RateLimits struct {
-	Limit           *int `json:",omitempty"`
-	LimitWindow     *int `json:",omitempty"`
-	Remaining       *int `json:",omitempty"`
-	RemainingWindow *int `json:",omitempty"`
+	Limit           *int    `json:",omitempty"`
+	LimitWindow     *int    `json:",omitempty"`
+	Remaining       *int    `json:",omitempty"`
+	RemainingWindow *int    `json:",omitempty"`
+	Source          *string `json:",omitempty"`
 }
 
 const (
@@ -74,11 +75,14 @@ func (c *Client) GetRateLimits() (*RateLimits, error) {
 		return nil, err
 	}
 
+	source := resp.Header.Get("docker-Ratelimit-Source")
+
 	return &RateLimits{
 		Limit:           &limit,
 		LimitWindow:     &limitWindow,
 		Remaining:       &remaining,
 		RemainingWindow: &remainingWindow,
+		Source:          &source,
 	}, nil
 }
 
