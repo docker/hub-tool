@@ -27,8 +27,8 @@ import (
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/format"
 	"github.com/docker/hub-tool/internal/format/tabwriter"
-	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/metrics"
+	"github.com/docker/hub-tool/pkg/hub"
 )
 
 const (

@@ -33,8 +33,8 @@ import (
 	"github.com/docker/hub-tool/internal/commands/tag"
 	"github.com/docker/hub-tool/internal/commands/token"
 	"github.com/docker/hub-tool/internal/credentials"
-	"github.com/docker/hub-tool/internal/hub"
 	"github.com/docker/hub-tool/internal/login"
+	"github.com/docker/hub-tool/pkg/hub"
 )
 
 type options struct {

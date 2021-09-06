@@ -29,16 +29,23 @@ import (
 
 // RateLimits ...
 type RateLimits struct {
-	Limit           *int `json:",omitempty"`
-	LimitWindow     *int `json:",omitempty"`
-	Remaining       *int `json:",omitempty"`
-	RemainingWindow *int `json:",omitempty"`
+	Limit           *int    `json:",omitempty"`
+	LimitWindow     *int    `json:",omitempty"`
+	Remaining       *int    `json:",omitempty"`
+	RemainingWindow *int    `json:",omitempty"`
+	Source          *string `json:",omitempty"`
 }
 
-const (
+var (
 	first  = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull"
 	second = "https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest"
 )
+
+// SetURLs change the base urls used to check ratelimiting values
+func SetURLs(newFirst, newSecond string) {
+	first = newFirst
+	second = newSecond
+}
 
 // GetRateLimits returns the rate limits for the authenticated user
 func (c *Client) GetRateLimits() (*RateLimits, error) {
@@ -74,35 +81,43 @@ func (c *Client) GetRateLimits() (*RateLimits, error) {
 		return nil, err
 	}
 
+	source := resp.Header.Get("docker-Ratelimit-Source")
+
 	return &RateLimits{
 		Limit:           &limit,
 		LimitWindow:     &limitWindow,
 		Remaining:       &remaining,
 		RemainingWindow: &remainingWindow,
+		Source:          &source,
 	}, nil
 }
 
 func tryGetToken(c *Client) (string, error) {
-	token, err := c.getToken(c.password)
+	token, err := c.getToken("", true)
 	if err != nil {
-		token, err = c.getToken(c.refreshToken)
+		token, err = c.getToken(c.password, false)
 		if err != nil {
-			token, err = c.getToken(c.token)
+			token, err = c.getToken(c.refreshToken, false)
 			if err != nil {
-				return "", err
+				token, err = c.getToken(c.token, false)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 	}
 	return token, nil
 }
 
-func (c *Client) getToken(password string) (string, error) {
+func (c *Client) getToken(password string, anonymous bool) (string, error) {
 	req, err := http.NewRequest("GET", first, nil)
 	if err != nil {
 		return "", err
 	}
 
-	req.Header.Add("Authorization", "Basic "+basicAuth(c.account, password))
+	if !anonymous {
+		req.Header.Add("Authorization", "Basic "+basicAuth(c.account, password))
+	}
 	resp, err := c.doRawRequest(req)
 	if err != nil {
 		return "", err
