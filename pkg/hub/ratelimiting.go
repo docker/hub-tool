@@ -37,8 +37,9 @@ type RateLimits struct {
 }
 
 var (
-	first  = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull"
-	second = "https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest"
+	first        = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull"
+	second       = "https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest"
+	defaultValue = -1
 )
 
 // SetURLs change the base urls used to check ratelimiting values
@@ -47,7 +48,7 @@ func SetURLs(newFirst, newSecond string) {
 	second = newSecond
 }
 
-// GetRateLimits returns the rate limits for the authenticated user
+// GetRateLimits returns the rate limits for the user
 func (c *Client) GetRateLimits() (*RateLimits, error) {
 	token, err := tryGetToken(c)
 	if err != nil {
@@ -66,9 +67,16 @@ func (c *Client) GetRateLimits() (*RateLimits, error) {
 
 	limitHeader := resp.Header.Get("Ratelimit-Limit")
 	remainingHeader := resp.Header.Get("Ratelimit-Remaining")
+	source := resp.Header.Get("docker-Ratelimit-Source")
 
 	if limitHeader == "" || remainingHeader == "" {
-		return nil, nil
+		return &RateLimits{
+			Limit:           &defaultValue,
+			LimitWindow:     &defaultValue,
+			Remaining:       &defaultValue,
+			RemainingWindow: &defaultValue,
+			Source:          &source,
+		}, nil
 	}
 
 	limit, limitWindow, err := parseLimitHeader(limitHeader)
@@ -80,8 +88,6 @@ func (c *Client) GetRateLimits() (*RateLimits, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	source := resp.Header.Get("docker-Ratelimit-Source")
 
 	return &RateLimits{
 		Limit:           &limit,
