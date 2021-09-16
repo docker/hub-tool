@@ -46,11 +46,19 @@ type Token struct {
 	IsActive    bool
 	Token       string
 	Description string
+	Scopes      []string
 }
 
 // CreateToken creates a Personal Access Token and returns the token field only once
-func (c *Client) CreateToken(description string) (*Token, error) {
-	data, err := json.Marshal(hubTokenRequest{Description: description})
+func (c *Client) CreateToken(description string, scope string) (*Token, error) {
+	tokenRequest := hubTokenRequest{Description: description}
+	if len(scope) > 0 {
+		scopes := []string{scope}
+		scopes[0] = "repo:" + scope
+		tokenRequest.Scopes = scopes
+	}
+
+	data, err := json.Marshal(tokenRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -190,8 +198,9 @@ func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
 }
 
 type hubTokenRequest struct {
-	Description string `json:"token_label,omitempty"`
-	IsActive    bool   `json:"is_active"`
+	Description string   `json:"token_label,omitempty"`
+	Scopes      []string `json:"scopes,omitempty"`
+	IsActive    bool     `json:"is_active"`
 }
 
 type hubTokenResponse struct {
@@ -212,6 +221,7 @@ type hubTokenResult struct {
 	IsActive    bool      `json:"is_active"`
 	Token       string    `json:"token"`
 	TokenLabel  string    `json:"token_label"`
+	Scopes      []string  `json:"scopes"`
 }
 
 func convertToken(response hubTokenResult) (Token, error) {
@@ -230,5 +240,6 @@ func convertToken(response hubTokenResult) (Token, error) {
 		IsActive:    response.IsActive,
 		Token:       response.Token,
 		Description: response.TokenLabel,
+		Scopes:      response.Scopes,
 	}, nil
 }

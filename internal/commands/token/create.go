@@ -17,6 +17,7 @@
 package token
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -38,6 +39,19 @@ type createOptions struct {
 	format.Option
 	description string
 	quiet       bool
+	scope       string
+}
+
+func validScope(scope string) bool {
+	switch scope {
+	case
+		"admin",
+		"write",
+		"read",
+		"public_read":
+		return true
+	}
+	return false
 }
 
 func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
@@ -54,17 +68,23 @@ func newCreateCmd(streams command.Streams, hubClient *hub.Client, parent string)
 			metrics.Send(parent, createName)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
+
 			return runCreate(streams, hubClient, opts)
 		},
 	}
 	opts.AddFormatFlag(cmd.Flags())
 	cmd.Flags().StringVar(&opts.description, "description", "", "Set token's description")
 	cmd.Flags().BoolVar(&opts.quiet, "quiet", false, "Display only created token")
+	cmd.Flags().StringVar(&opts.scope, "scope", "", "Set token's repo scope (admin,write,read,public_read)")
+
 	return cmd
 }
 
 func runCreate(streams command.Streams, hubClient *hub.Client, opts createOptions) error {
-	token, err := hubClient.CreateToken(opts.description)
+	if len(opts.scope) > 0 && !validScope(opts.scope) {
+		return errors.New("scope must be one of admin,write,read,public_read")
+	}
+	token, err := hubClient.CreateToken(opts.description, opts.scope)
 	if err != nil {
 		return err
 	}
