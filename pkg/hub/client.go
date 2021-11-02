@@ -48,6 +48,7 @@ type Client struct {
 	AuthConfig types.AuthConfig
 	Ctx        context.Context
 
+	client           *http.Client
 	domain           string
 	token            string
 	refreshToken     string
@@ -86,6 +87,7 @@ func NewClient(ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
 
 	client := &Client{
+		client: http.DefaultClient,
 		domain: hubInstance.APIHubBaseURL,
 	}
 	for _, op := range ops {
@@ -167,6 +169,14 @@ func WithRefreshToken(refreshToken string) ClientOp {
 func WithPassword(password string) ClientOp {
 	return func(c *Client) error {
 		c.password = password
+		return nil
+	}
+}
+
+// WithHTTPClient sets the *http.Client for the client
+func WithHTTPClient(client *http.Client) ClientOp {
+	return func(c *Client) error {
+		c.client = client
 		return nil
 	}
 }
@@ -336,7 +346,7 @@ func (c *Client) doRawRequest(req *http.Request, reqOps ...RequestOp) (*http.Res
 	if c.Ctx != nil {
 		req = req.WithContext(c.Ctx)
 	}
-	return http.DefaultClient.Do(req)
+	return c.client.Do(req)
 }
 
 func extractError(buf []byte, resp *http.Response) (bool, error) {
