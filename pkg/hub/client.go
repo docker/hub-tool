@@ -214,7 +214,7 @@ func (c *Client) Login(username string, password string, twoFactorCodeProvider f
 	body := bytes.NewBuffer(data)
 
 	// Login on the Docker Hub
-	req, err := http.NewRequest("POST", c.domain+LoginURL, ioutil.NopCloser(body))
+	req, err := http.NewRequest("POST", c.domain+LoginURL, body)
 	if err != nil {
 		return "", "", err
 	}
@@ -270,7 +270,7 @@ func (c *Client) getTwoFactorToken(token string, twoFactorCodeProvider func() (s
 	body := bytes.NewBuffer(data)
 
 	// Request 2FA on the Docker Hub
-	req, err := http.NewRequest("POST", c.domain+TwoFactorLoginURL, ioutil.NopCloser(body))
+	req, err := http.NewRequest("POST", c.domain+TwoFactorLoginURL, body)
 	if err != nil {
 		return "", "", err
 	}
