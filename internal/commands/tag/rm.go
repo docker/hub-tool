@@ -96,7 +96,12 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 	}
 
 	if err := hubClient.RemoveTag(reference.FamiliarName(ref), ref.Tag()); err != nil {
-		return err
+		if strings.Contains(err.Error(), "404 NOT FOUND") {
+			fmt.Fprintln(streams.Out(), "Not Found", image)
+			return nil
+		} else {
+			return err
+		}
 	}
 	fmt.Fprintln(streams.Out(), "Deleted", image)
 	return nil
