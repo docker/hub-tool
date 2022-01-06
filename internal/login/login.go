@@ -40,14 +40,20 @@ import (
 func RunLogin(ctx context.Context, streams command.Streams, hubClient *hub.Client, store credentials.Store, candidateUsername string) error {
 	username := candidateUsername
 	if username == "" {
+		username = os.Getenv("DOCKER_USERNAME")
+	}
+	if username == "" {
 		var err error
 		if username, err = readClearText(ctx, streams, "Username: "); err != nil {
 			return err
 		}
 	}
-	password, err := readPassword(streams)
-	if err != nil {
-		return err
+	password := os.Getenv("DOCKER_PASSWORD")
+	if password == "" {
+		var err error
+		if password, err = readPassword(streams); err != nil {
+			return err
+		}
 	}
 
 	token, refreshToken, err := Login(ctx, streams, hubClient, username, password)
