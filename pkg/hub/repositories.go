@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	// HubBaseURL is the Hub API base URL
-	HubBaseURL = "/v2/repositories/"
+	// RepositoriesURL is the Hub API base URL
+	RepositoriesURL = "/v2/repositories/"
 )
 
 //Repository represents a Docker Hub repository
@@ -44,8 +44,7 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	if account == "" {
 		account = c.account
 	}
-	repositoriesURL := fmt.Sprintf("%s%s%s", c.domain, HubBaseURL, account)
-	fmt.Println(repositoriesURL)
+	repositoriesURL := fmt.Sprintf("%s%s%s", c.domain, RepositoriesURL, account)
 	u, err := url.Parse(repositoriesURL)
 	if err != nil {
 		return nil, 0, err
@@ -75,15 +74,18 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	return repos, total, nil
 }
 
-//RemoveRepository receives repository parameter in the format ``username/repository``, and request repository deletion
-//on Hub using the user token
+//RemoveRepository removes a repository on Hub
 func (c *Client) RemoveRepository(repository string) error {
-	repositoryUrl := fmt.Sprintf("%s%s%s", c.domain, HubBaseURL, repository)
+	repositoryUrl := fmt.Sprintf("%s%s%s/%s/", c.domain, RepositoriesURL, c.account, repository)
 	req, err := http.NewRequest(http.MethodDelete, repositoryUrl, nil)
 	if err != nil {
 		return err
 	}
 	_, err = c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
