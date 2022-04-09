@@ -47,7 +47,7 @@ type rmOptions struct {
 func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:                   rmName + " [OPTIONS] REPOSITORY",
+		Use:                   rmName + " [OPTIONS] USERNAME/REPOSITORY",
 		Short:                 "Delete a repository",
 		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
@@ -73,7 +73,7 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 	}
 	namedRef, ok := ref.(reference.Named)
 	if !ok {
-		return fmt.Errorf("invalid reference: repository not specified")
+		return errors.New("invalid reference: repository not specified")
 	}
 
 	if !opts.force {
@@ -104,6 +104,9 @@ func runRm(ctx context.Context, streams command.Streams, hubClient *hub.Client, 
 	if err := hubClient.RemoveRepository(namedRef.Name()); err != nil {
 		return err
 	}
-	fmt.Fprintln(streams.Out(), "Deleted", repository)
+	_, err = fmt.Fprintln(streams.Out(), fmt.Sprintf("Repository %q was deleted", repository))
+	if err != nil {
+		return err
+	}
 	return nil
 }
