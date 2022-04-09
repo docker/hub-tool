@@ -56,6 +56,12 @@ var (
 			s := fmt.Sprintf("%v", t.IsActive)
 			return s, len(s)
 		}},
+		{"SCOPE", func(t hub.Token) (string, int) {
+			if len(t.Scopes) == 0 {
+				return "", 0
+			}
+			return t.Scopes[0][5:], len(t.Scopes[0]) - 5
+		}},
 	}
 )
 
