@@ -67,11 +67,12 @@ func runRemove(streams command.Streams, hubClient *hub.Client, opts removeOption
 	}
 
 	if !opts.force {
-		fmt.Fprintf(streams.Out(), ansi.Warn("WARNING: This action is irreversible.")+`
-By confirming, you will permanently delete the access token.
-Deleting a token will invalidate your credentials on all Docker clients currently authenticated with this token.
 
-Please type your username %q to confirm deletion: `, hubClient.AuthConfig.Username)
+		fmt.Fprintf(streams.Out(), ansi.Warn("WARNING: This action is irreversible.")+`
+By confirming, you will permanently revoke and delete the access token.
+Revoking a token will invalidate your credentials on all Docker clients currently authenticated with this token.
+
+Please type your username %q to confirm token deletion: `, hubClient.AuthConfig.Username)
 		reader := bufio.NewReader(streams.In())
 		input, _ := reader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
@@ -83,6 +84,6 @@ Please type your username %q to confirm deletion: `, hubClient.AuthConfig.Userna
 	if err := hubClient.RemoveToken(u.String()); err != nil {
 		return err
 	}
-	fmt.Fprintln(streams.Out(), ansi.Emphasise("Deleted"), u)
+	fmt.Fprintln(streams.Out(), ansi.Emphasise("Access token deleted"), u)
 	return nil
 }
