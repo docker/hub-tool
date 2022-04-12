@@ -76,8 +76,8 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 
 //RemoveRepository removes a repository on Hub
 func (c *Client) RemoveRepository(repository string) error {
-	repositoryUrl := fmt.Sprintf("%s%s%s/%s/", c.domain, RepositoriesURL, c.account, repository)
-	req, err := http.NewRequest(http.MethodDelete, repositoryUrl, nil)
+	repositoryURL := fmt.Sprintf("%s%s%s/", c.domain, RepositoriesURL, repository)
+	req, err := http.NewRequest(http.MethodDelete, repositoryURL, nil)
 	if err != nil {
 		return err
 	}
