@@ -47,7 +47,7 @@ type rmOptions struct {
 func newRmCmd(streams command.Streams, hubClient *hub.Client, parent string) *cobra.Command {
 	var opts rmOptions
 	cmd := &cobra.Command{
-		Use:                   rmName + " [OPTIONS] USERNAME(OR)ORGANIZATION NAME/REPOSITORY",
+		Use:                   rmName + " [OPTIONS] NAMESPACE/REPOSITORY",
 		Short:                 "Delete a repository",
 		Args:                  cli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
