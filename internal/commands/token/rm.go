@@ -69,8 +69,8 @@ func runRemove(streams command.Streams, hubClient *hub.Client, opts removeOption
 	if !opts.force {
 
 		fmt.Fprintf(streams.Out(), ansi.Warn("WARNING: This action is irreversible.")+`
-By confirming, you will permanently revoke and delete the access token.
-Revoking a token will invalidate your credentials on all Docker clients currently authenticated with this token.
+By confirming, you will permanently delete the access token.
+Removing the tokens will invalidate your credentials on all Docker clients currently authenticated with the tokens.
 
 Please type your username %q to confirm token deletion: `, hubClient.AuthConfig.Username)
 		reader := bufio.NewReader(streams.In())
