@@ -144,6 +144,7 @@ func WithOutStream(out io.Writer) ClientOp {
 // WithHubAccount sets the current account name
 func WithHubAccount(account string) ClientOp {
 	return func(c *Client) error {
+		c.AuthConfig.Username = account
 		c.account = account
 		return nil
 	}
