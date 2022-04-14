@@ -58,7 +58,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 FROM builder AS validate-headers
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
-    go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader
+    go install github.com/kunalkushwaha/ltag@v0.2.3 && ./scripts/validate/fileheader
+
 
 ####
 # CHECK GO MOD
