@@ -37,3 +37,8 @@ func TestIsForbiddenError(t *testing.T) {
 	assert.Assert(t, IsForbiddenError(&forbiddenError{}))
 	assert.Assert(t, !IsForbiddenError(errors.New("")))
 }
+
+func TestIsNotFoundError(t *testing.T) {
+	assert.Assert(t, IsNotFoundError(&notFoundError{}))
+	assert.Assert(t, !IsNotFoundError(errors.New("")))
+}

@@ -56,3 +56,15 @@ func IsForbiddenError(err error) bool {
 	_, ok := err.(*forbiddenError)
 	return ok
 }
+
+type notFoundError struct{}
+
+func (n notFoundError) Error() string {
+	return "resource not found"
+}
+
+// IsNotFoundError check if the error type is a not found error
+func IsNotFoundError(err error) bool {
+	_, ok := err.(*notFoundError)
+	return ok
+}

@@ -310,6 +310,11 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		defer resp.Body.Close() //nolint:errcheck
 	}
 	log.Tracef("HTTP response: %+v", resp)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, &notFoundError{}
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if resp.StatusCode == http.StatusForbidden {
 			return nil, &forbiddenError{}

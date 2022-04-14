@@ -25,10 +25,8 @@ import (
 )
 
 const (
-	// RepositoriesURL path to the Hub API listing the repositories
-	RepositoriesURL = "/v2/repositories/%s/"
-	// DeleteRepositoryURL path to the Hub API to remove a repository
-	DeleteRepositoryURL = "/v2/repositories/%s/"
+	// RepositoriesURL is the Hub API base URL
+	RepositoriesURL = "/v2/repositories/"
 )
 
 //Repository represents a Docker Hub repository
@@ -46,7 +44,8 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	if account == "" {
 		account = c.account
 	}
-	u, err := url.Parse(c.domain + fmt.Sprintf(RepositoriesURL, account))
+	repositoriesURL := fmt.Sprintf("%s%s%s", c.domain, RepositoriesURL, account)
+	u, err := url.Parse(repositoriesURL)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -77,12 +76,17 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 
 //RemoveRepository removes a repository on Hub
 func (c *Client) RemoveRepository(repository string) error {
-	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(DeleteRepositoryURL, repository), nil)
+	repositoryURL := fmt.Sprintf("%s%s%s/", c.domain, RepositoriesURL, repository)
+	req, err := http.NewRequest(http.MethodDelete, repositoryURL, nil)
 	if err != nil {
 		return err
 	}
 	_, err = c.doRequest(req, withHubToken(c.token))
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) getRepositoriesPage(url, account string) ([]Repository, int, string, error) {
