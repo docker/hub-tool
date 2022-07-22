@@ -32,8 +32,8 @@ import (
 	"github.com/docker/hub-tool/internal/commands/repo"
 	"github.com/docker/hub-tool/internal/commands/tag"
 	"github.com/docker/hub-tool/internal/commands/token"
-	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/login"
+	"github.com/docker/hub-tool/pkg/credentials"
 	"github.com/docker/hub-tool/pkg/hub"
 )
 

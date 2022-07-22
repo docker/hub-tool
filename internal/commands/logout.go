@@ -23,8 +23,8 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/hub-tool/internal/ansi"
-	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/metrics"
+	"github.com/docker/hub-tool/pkg/credentials"
 )
 
 const (

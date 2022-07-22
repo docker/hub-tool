@@ -29,7 +29,7 @@ import (
 	cliflags "github.com/docker/cli/cli/flags"
 
 	"github.com/docker/hub-tool/internal/commands"
-	"github.com/docker/hub-tool/internal/credentials"
+	"github.com/docker/hub-tool/pkg/credentials"
 	"github.com/docker/hub-tool/pkg/hub"
 )
 
