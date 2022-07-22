@@ -31,8 +31,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/docker/hub-tool/internal/ansi"
-	"github.com/docker/hub-tool/internal/credentials"
 	"github.com/docker/hub-tool/internal/errdef"
+	"github.com/docker/hub-tool/pkg/credentials"
 	"github.com/docker/hub-tool/pkg/hub"
 )
 
