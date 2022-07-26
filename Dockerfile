@@ -16,10 +16,10 @@
 #   limitations under the License.
 
 
-ARG GO_VERSION=1.16.3-alpine
-ARG CLI_VERSION=20.10.2
-ARG ALPINE_VERSION=3.12.2
-ARG GOLANGCI_LINT_VERSION=v1.33.0-alpine
+ARG GO_VERSION
+ARG CLI_VERSION
+ARG ALPINE_VERSION
+ARG GOLANGCI_LINT_VERSION
 
 ####
 # BUILDER
@@ -58,7 +58,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 FROM builder AS validate-headers
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
-    go get -u github.com/kunalkushwaha/ltag && ./scripts/validate/fileheader
+    go install github.com/kunalkushwaha/ltag@v0.2.3 && ./scripts/validate/fileheader
+
 
 ####
 # CHECK GO MOD
