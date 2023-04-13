@@ -31,13 +31,13 @@ const (
 	MembersPerTeamURL = "/v2/orgs/%s/groups/%s/members/"
 )
 
-//Member is a user part of an organization
+// Member is a user part of an organization
 type Member struct {
 	Username string `json:"username"`
 	FullName string `json:"full_name"`
 }
 
-//GetMembers lists all the members in an organization
+// GetMembers lists all the members in an organization
 func (c *Client) GetMembers(organization string) ([]Member, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(MembersURL, organization))
 	if err != nil {
@@ -93,20 +93,44 @@ func (c *Client) GetMembersCount(organization string) (int, error) {
 
 // GetMembersPerTeam returns the members of a team in an organization
 func (c *Client) GetMembersPerTeam(organization, team string) ([]Member, error) {
-	u := c.domain + fmt.Sprintf(MembersPerTeamURL, organization, team)
-	req, err := http.NewRequest("GET", u, nil)
+	u, err := url.Parse(c.domain + fmt.Sprintf(MembersPerTeamURL, organization, team))
 	if err != nil {
 		return nil, err
 	}
-	response, err := c.doRequest(req, withHubToken(c.token))
+	q := url.Values{}
+	q.Add("page_size", fmt.Sprintf("%v", itemsPerPage))
+	q.Add("page", "1")
+	u.RawQuery = q.Encode()
+
+	members, next, err := c.getMembersPage(u.String())
 	if err != nil {
 		return nil, err
 	}
-	var members []Member
-	if err := json.Unmarshal(response, &members); err != nil {
-		return nil, err
+
+	for next != "" {
+		pageMembers, n, err := c.getMembersPage(next)
+		if err != nil {
+			return nil, err
+		}
+		next = n
+		members = append(members, pageMembers...)
 	}
+
 	return members, nil
+
+	//req, err := http.NewRequest("GET", u, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//response, err := c.doRequest(req, withHubToken(c.token))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//var members []Member
+	//if err := json.Unmarshal(response, &members); err != nil {
+	//	return nil, err
+	//}
+	//return members, nil
 }
 
 func (c *Client) getMembersPage(url string) ([]Member, string, error) {

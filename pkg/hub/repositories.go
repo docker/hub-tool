@@ -17,10 +17,13 @@
 package hub
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 	"time"
 )
 
@@ -29,7 +32,7 @@ const (
 	RepositoriesURL = "/v2/repositories/"
 )
 
-//Repository represents a Docker Hub repository
+// Repository represents a Docker Hub repository
 type Repository struct {
 	Name        string
 	Description string
@@ -39,7 +42,7 @@ type Repository struct {
 	IsPrivate   bool
 }
 
-//GetRepositories lists all the repositories a user can access
+// GetRepositories lists all the repositories a user can access
 func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	if account == "" {
 		account = c.account
@@ -74,7 +77,7 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	return repos, total, nil
 }
 
-//RemoveRepository removes a repository on Hub
+// RemoveRepository removes a repository on Hub
 func (c *Client) RemoveRepository(repository string) error {
 	repositoryURL := fmt.Sprintf("%s%s%s/", c.domain, RepositoriesURL, repository)
 	req, err := http.NewRequest(http.MethodDelete, repositoryURL, nil)
@@ -86,6 +89,93 @@ func (c *Client) RemoveRepository(repository string) error {
 		return err
 	}
 
+	return nil
+}
+
+// CreateRepository creates a repository on Hub
+func (c *Client) CreateRepository(
+	repository string,
+	description string,
+	isPrivate bool,
+) (*Repository, error) {
+	namespace := path.Dir(repository)
+	name := path.Base(repository)
+	data, err := json.Marshal(hubCreateRepositoryRequest{
+		Registry:    "docker",
+		Namespace:   namespace,
+		Name:        name,
+		Description: description,
+		IsPrivate:   isPrivate,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body := bytes.NewBuffer(data)
+	createRepositoryURL := fmt.Sprintf("%s%s", c.domain, RepositoriesURL)
+	req, err := http.NewRequest(http.MethodPost, createRepositoryURL, body)
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return nil, err
+	}
+	var repositoryResult hubRepositoryResult
+	if err := json.Unmarshal(response, &repositoryResult); err != nil {
+		return nil, err
+	}
+	ret := convertRepository(repositoryResult)
+	return &ret, nil
+}
+
+// ToggleScanning turns image scanning on/off
+func (c *Client) ToggleScanning(repository string, scanEnabled bool) error {
+	enableScanningURL := fmt.Sprintf("%s%s%s", c.domain, "/api/scan/v1/accounts/", repository)
+	data, err := json.Marshal(map[string]bool{"scan_enabled": scanEnabled})
+	if err != nil {
+		return err
+	}
+	body := bytes.NewBuffer(data)
+	req, err := http.NewRequest(http.MethodPost, enableScanningURL, body)
+	if err != nil {
+		return err
+	}
+	res, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return fmt.Errorf("%s, body: %s", err, res)
+	}
+	return nil
+}
+
+// ConfigurePermission configures a team permission on a repository
+func (c *Client) ConfigurePermission(repository string, team string, permission PermissionType) error {
+	org := strings.Split(repository, "/")[0]
+	teams, err := c.GetTeams(org)
+	if err != nil {
+		return err
+	}
+	var teamID int
+	for i := range teams {
+		if teams[i].Name == team {
+			teamID = teams[i].ID
+		}
+	}
+	fmt.Println(teamID)
+
+	configurePermissionsURL := fmt.Sprintf("%s%s%s%s", c.domain, RepositoriesURL, repository, "/groups")
+	data, err := json.Marshal(map[string]interface{}{"group_id": teamID, "permission": permission})
+	if err != nil {
+		return err
+	}
+	body := bytes.NewBuffer(data)
+	req, err := http.NewRequest(http.MethodPost, configurePermissionsURL, body)
+	if err != nil {
+		return err
+	}
+	res, err := c.doRequest(req, withHubToken(c.token))
+	if err != nil {
+		return fmt.Errorf("%s, body: %s", err, res)
+	}
 	return nil
 }
 
@@ -104,14 +194,7 @@ func (c *Client) getRepositoriesPage(url, account string) ([]Repository, int, st
 	}
 	var repos []Repository
 	for _, result := range hubResponse.Results {
-		repo := Repository{
-			Name:        fmt.Sprintf("%s/%s", account, result.Name),
-			Description: result.Description,
-			LastUpdated: result.LastUpdated,
-			PullCount:   result.PullCount,
-			StarCount:   result.StarCount,
-			IsPrivate:   result.IsPrivate,
-		}
+		repo := convertRepository(result)
 		repos = append(repos, repo)
 	}
 	return repos, hubResponse.Count, hubResponse.Next, nil
@@ -140,10 +223,36 @@ type hubRepositoryResult struct {
 	User           string         `json:"user"`
 }
 
-//RepositoryType lists all the different repository types handled by the Docker Hub
+func convertRepository(res hubRepositoryResult) Repository {
+	return Repository{
+		Name:        fmt.Sprintf("%s/%s", res.Namespace, res.Name),
+		Description: res.Description,
+		LastUpdated: res.LastUpdated,
+		PullCount:   res.PullCount,
+		StarCount:   res.StarCount,
+		IsPrivate:   res.IsPrivate,
+	}
+}
+
+type hubCreateRepositoryRequest struct {
+	Registry    string `json:"registry"`
+	Namespace   string `json:"namespace"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	IsPrivate   bool   `json:"is_private"`
+}
+
+// RepositoryType lists all the different repository types handled by the Docker Hub
 type RepositoryType string
 
 const (
 	//ImageType is the classic image type
 	ImageType = RepositoryType("image")
+)
+
+type PermissionType string
+
+const (
+	ReadOnly  PermissionType = "read"
+	ReadWrite PermissionType = "write"
 )
