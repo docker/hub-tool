@@ -73,4 +73,4 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-replace github.com/docker/hub-tool => github.com/wheelerlaw/hub-tool v0.0.0-20220726160515-44062da63a0c
+replace github.com/docker/hub-tool => github.com/wheelerlaw/hub-tool expanded-api
