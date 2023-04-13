@@ -34,7 +34,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gotest.tools/v3 v3.0.3
 )
-
-replace (
-	github.com/docker/hub-tool => github.com/wheelerlaw/hub-tool latest
-)
