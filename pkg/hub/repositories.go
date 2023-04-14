@@ -160,7 +160,6 @@ func (c *Client) ConfigurePermission(repository string, team string, permission 
 			teamID = teams[i].ID
 		}
 	}
-	fmt.Println(teamID)
 
 	configurePermissionsURL := fmt.Sprintf("%s%s%s%s", c.domain, RepositoriesURL, repository, "/groups")
 	data, err := json.Marshal(map[string]interface{}{"group_id": teamID, "permission": permission})

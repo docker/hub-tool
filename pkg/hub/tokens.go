@@ -29,12 +29,12 @@ import (
 
 const (
 	// TokensURL path to the Hub API listing the Personal Access Tokens
-	TokensURL = "/v2/api_tokens"
+	TokensURL = "/v2/access-tokens"
 	// TokenURL path to the Hub API Personal Access Token
-	TokenURL = "/v2/api_tokens/%s"
+	TokenURL = "/v2/access-tokens/%s"
 )
 
-//Token is a personal access token. The token field will only be filled at creation and can never been accessed again.
+// Token is a personal access token. The token field will only be filled at creation and can never been accessed again.
 type Token struct {
 	UUID        uuid.UUID
 	ClientID    string
@@ -46,16 +46,20 @@ type Token struct {
 	IsActive    bool
 	Token       string
 	Description string
+	Scopes      []TokenScope
 }
 
 // CreateToken creates a Personal Access Token and returns the token field only once
-func (c *Client) CreateToken(description string) (*Token, error) {
-	data, err := json.Marshal(hubTokenRequest{Description: description})
+func (c *Client) CreateToken(description string, scopes []TokenScope) (*Token, error) {
+	data, err := json.Marshal(hubTokenRequest{
+		Description: description,
+		Scopes:      scopes,
+	})
 	if err != nil {
 		return nil, err
 	}
 	body := bytes.NewBuffer(data)
-	req, err := http.NewRequest("POST", c.domain+TokensURL, body)
+	req, err := http.NewRequest(http.MethodPost, c.domain+TokensURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +78,7 @@ func (c *Client) CreateToken(description string) (*Token, error) {
 	return &token, nil
 }
 
-//GetTokens calls the hub repo API and returns all the information on all tokens
+// GetTokens calls the hub repo API and returns all the information on all tokens
 func (c *Client) GetTokens() ([]Token, int, error) {
 	u, err := url.Parse(c.domain + TokensURL)
 	if err != nil {
@@ -103,9 +107,9 @@ func (c *Client) GetTokens() ([]Token, int, error) {
 	return tokens, total, nil
 }
 
-//GetToken calls the hub repo API and returns the information on one token
+// GetToken calls the hub repo API and returns the information on one token
 func (c *Client) GetToken(tokenUUID string) (*Token, error) {
-	req, err := http.NewRequest("GET", c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
+	req, err := http.NewRequest(http.MethodGet, c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +139,7 @@ func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Tok
 		return nil, err
 	}
 	body := bytes.NewBuffer(data)
-	req, err := http.NewRequest("PATCH", c.domain+fmt.Sprintf(TokenURL, tokenUUID), body)
+	req, err := http.NewRequest(http.MethodPatch, c.domain+fmt.Sprintf(TokenURL, tokenUUID), body)
 	if err != nil {
 		return nil, err
 	}
@@ -154,10 +158,10 @@ func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Tok
 	return &token, nil
 }
 
-//RemoveToken deletes a token from personal access token
+// RemoveToken deletes a token from personal access token
 func (c *Client) RemoveToken(tokenUUID string) error {
 	//DELETE https://hub.docker.com/v2/api_tokens/8208674e-d08a-426f-b6f4-e3aba7058459 => 202
-	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
+	req, err := http.NewRequest(http.MethodDelete, c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
 	if err != nil {
 		return err
 	}
@@ -166,7 +170,7 @@ func (c *Client) RemoveToken(tokenUUID string) error {
 }
 
 func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -189,9 +193,19 @@ func (c *Client) getTokensPage(url string) ([]Token, int, string, error) {
 	return tokens, hubResponse.Count, hubResponse.Next, nil
 }
 
+type TokenScope string
+
+const (
+	TokenReadWriteDelete    TokenScope = "repo:admin"
+	TokenReadWrite          TokenScope = "repo:write"
+	TokenReadOnly           TokenScope = "repo:read"
+	TokenPublicRepoReadOnly TokenScope = "repo:public_read"
+)
+
 type hubTokenRequest struct {
-	Description string `json:"token_label,omitempty"`
-	IsActive    bool   `json:"is_active"`
+	Description string       `json:"token_label,omitempty"`
+	IsActive    bool         `json:"is_active,omitempty"`
+	Scopes      []TokenScope `json:"scopes"`
 }
 
 type hubTokenResponse struct {
@@ -202,16 +216,17 @@ type hubTokenResponse struct {
 }
 
 type hubTokenResult struct {
-	UUID        string    `json:"uuid"`
-	ClientID    string    `json:"client_id"`
-	CreatorIP   string    `json:"creator_ip"`
-	CreatorUA   string    `json:"creator_ua"`
-	CreatedAt   time.Time `json:"created_at"`
-	LastUsed    time.Time `json:"last_used,omitempty"`
-	GeneratedBy string    `json:"generated_by"`
-	IsActive    bool      `json:"is_active"`
-	Token       string    `json:"token"`
-	TokenLabel  string    `json:"token_label"`
+	UUID        string       `json:"uuid"`
+	ClientID    string       `json:"client_id"`
+	CreatorIP   string       `json:"creator_ip"`
+	CreatorUA   string       `json:"creator_ua"`
+	CreatedAt   time.Time    `json:"created_at"`
+	LastUsed    time.Time    `json:"last_used,omitempty"`
+	GeneratedBy string       `json:"generated_by"`
+	IsActive    bool         `json:"is_active"`
+	Token       string       `json:"token"`
+	TokenLabel  string       `json:"token_label"`
+	Scopes      []TokenScope `json:"scopes"`
 }
 
 func convertToken(response hubTokenResult) (Token, error) {
@@ -230,5 +245,6 @@ func convertToken(response hubTokenResult) (Token, error) {
 		IsActive:    response.IsActive,
 		Token:       response.Token,
 		Description: response.TokenLabel,
+		Scopes:      response.Scopes,
 	}, nil
 }
