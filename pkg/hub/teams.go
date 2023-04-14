@@ -32,14 +32,15 @@ const (
 	GroupsURL = "/v2/orgs/%s/groups/"
 )
 
-//Team represents a hub group in an organization
+// Team represents a hub group in an organization
 type Team struct {
+	ID          int
 	Name        string
 	Description string
 	Members     []Member
 }
 
-//GetTeams lists all the teams in an organization
+// GetTeams lists all the teams in an organization
 func (c *Client) GetTeams(organization string) ([]Team, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(GroupsURL, organization))
 	if err != nil {
@@ -67,7 +68,7 @@ func (c *Client) GetTeams(organization string) ([]Team, error) {
 	return teams, nil
 }
 
-//GetTeamsCount returns the number of teams in an organization
+// GetTeamsCount returns the number of teams in an organization
 func (c *Client) GetTeamsCount(organization string) (int, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(GroupsURL, organization))
 	if err != nil {
@@ -116,6 +117,7 @@ func (c *Client) getTeamsPage(url, organization string) ([]Team, string, error) 
 				return err
 			}
 			team := Team{
+				ID:          result.ID,
 				Name:        result.Name,
 				Description: result.Description,
 				Members:     members,
