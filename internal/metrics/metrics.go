@@ -17,15 +17,16 @@
 package metrics
 
 import (
+	"net/http"
 	"strings"
 
-	"github.com/docker/compose-cli/metrics"
+	"github.com/docker/compose-cli/cli/metrics"
 )
 
-//Send emit a metric message to the local Desktop metric listener
+// Send emit a metric message to the local Desktop metric listener
 func Send(parent, command string) {
-	client := metrics.NewClient()
-	client.Send(metrics.Command{
+	client := metrics.NewClient(metrics.NewHTTPReporter(http.DefaultClient))
+	client.SendUsage(metrics.CommandUsage{
 		Command: strings.Join([]string{parent, command}, " "),
 		Context: "hub",
 		Source:  "hub-cli",

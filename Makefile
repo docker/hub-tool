@@ -65,6 +65,8 @@ package-cross: cross ## Package the cross compiled binaries in tarballs for *nix
 			--target package | gzip -9 > dist/$(BINARY_NAME)-$(subst /,-,$(plat)).tar.gz ;)
 	cp bin/$(BINARY_NAME)_windows_amd64.exe $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -f dist/$(BINARY_NAME)-windows-amd64.zip && zip dist/$(BINARY_NAME)-windows-amd64.zip -j packaging/LICENSE $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
+	cp bin/$(BINARY_NAME)_windows_arm64.exe $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
+	rm -f dist/$(BINARY_NAME)-windows-arm64.zip && zip dist/$(BINARY_NAME)-windows-arm64.zip -j packaging/LICENSE $(TMPDIR_WIN_PKG)/$(BINARY_NAME).exe
 	rm -r $(TMPDIR_WIN_PKG)
 
 .PHONY: install

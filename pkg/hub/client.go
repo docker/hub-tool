@@ -26,7 +26,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/cli/cli/config/types"
+	"github.com/docker/docker/api/types/registry"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker/hub-tool/internal"
@@ -43,9 +44,9 @@ const (
 	itemsPerPage = 100
 )
 
-//Client sends authenticated calls to the Hub API
+// Client sends authenticated calls to the Hub API
 type Client struct {
-	AuthConfig types.AuthConfig
+	AuthConfig registry.AuthConfig
 	Ctx        context.Context
 
 	client           *http.Client
@@ -75,13 +76,13 @@ type tokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-//ClientOp represents an option given to NewClient constructor to customize client behavior.
+// ClientOp represents an option given to NewClient constructor to customize client behavior.
 type ClientOp func(*Client) error
 
-//RequestOp represents an option to customize the request sent to the Hub API
+// RequestOp represents an option to customize the request sent to the Hub API
 type RequestOp func(r *http.Request) error
 
-//NewClient logs the user to the hub and returns a client which can send authenticated requests
+// NewClient logs the user to the hub and returns a client which can send authenticated requests
 // to the Hub API
 func NewClient(ops ...ClientOp) (*Client, error) {
 	hubInstance := getInstance()
@@ -99,7 +100,7 @@ func NewClient(ops ...ClientOp) (*Client, error) {
 	return client, nil
 }
 
-//Update changes client behavior using ClientOp
+// Update changes client behavior using ClientOp
 func (c *Client) Update(ops ...ClientOp) error {
 	for _, op := range ops {
 		if err := op(c); err != nil {
@@ -109,7 +110,7 @@ func (c *Client) Update(ops ...ClientOp) error {
 	return nil
 }
 
-//WithAllElements makes the client fetch all the elements it can find, enabling pagination.
+// WithAllElements makes the client fetch all the elements it can find, enabling pagination.
 func WithAllElements() ClientOp {
 	return func(c *Client) error {
 		c.fetchAllElements = true
@@ -117,7 +118,7 @@ func WithAllElements() ClientOp {
 	}
 }
 
-//WithContext set the client context
+// WithContext set the client context
 func WithContext(ctx context.Context) ClientOp {
 	return func(c *Client) error {
 		c.Ctx = ctx
@@ -125,7 +126,7 @@ func WithContext(ctx context.Context) ClientOp {
 	}
 }
 
-//WithInStream sets the input stream
+// WithInStream sets the input stream
 func WithInStream(in io.Reader) ClientOp {
 	return func(c *Client) error {
 		c.in = in
@@ -133,7 +134,7 @@ func WithInStream(in io.Reader) ClientOp {
 	}
 }
 
-//WithOutStream sets the output stream
+// WithOutStream sets the output stream
 func WithOutStream(out io.Writer) ClientOp {
 	return func(c *Client) error {
 		c.out = out
@@ -189,7 +190,7 @@ func withHubToken(token string) RequestOp {
 	}
 }
 
-//WithSortingOrder adds a sorting order query parameter to the request
+// WithSortingOrder adds a sorting order query parameter to the request
 func WithSortingOrder(order string) RequestOp {
 	return func(req *http.Request) error {
 		values, err := url.ParseQuery(req.URL.RawQuery)

@@ -63,6 +63,7 @@ cross:
 	GOOS=darwin  GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_darwin_amd64 .
 	GOOS=darwin  GOARCH=arm64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_darwin_arm64 .
 	GOOS=windows GOARCH=amd64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_windows_amd64.exe .
+	GOOS=windows GOARCH=arm64 $(STATIC_FLAGS) $(GO_BUILD) -o bin/$(BINARY_NAME)_windows_arm64.exe .
 
 # Note we're building statically for now to simplify releases. We can
 # investigate dynamic builds later.
