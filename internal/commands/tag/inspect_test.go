@@ -49,10 +49,9 @@ func TestPrintImage(t *testing.T) {
 	}
 	now := time.Now()
 	config := ocispec.Image{
-		Created:      &now,
-		Author:       "author",
-		Architecture: "arch",
-		OS:           "os",
+		Created:  &now,
+		Author:   "author",
+		Platform: ocispec.Platform{Architecture: "arch", OS: "os"},
 		Config: ocispec.ImageConfig{
 			User:         "user",
 			ExposedPorts: map[string]struct{}{"80/tcp": {}},
