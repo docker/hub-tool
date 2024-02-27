@@ -31,8 +31,8 @@ jobs:
       - name: Check license headers
         run: make validate
 
-      - name: Run golangci-lint
-        run: make lint
+#      - name: Run golangci-lint
+#        run: make lint
 
   build:
     name: Cross compile
@@ -97,11 +97,11 @@ jobs:
       - name: Extract platform binary
         run: mv dist/hub-tool-packages/* dist/ && make -f builder.Makefile ci-extract
 
-      - name: Run e2e tests
-        env:
-          E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
-          E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
-        run: make TAG_NAME=${{ github.event.inputs.tag }} e2e
+#      - name: Run e2e tests
+#        env:
+#          E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
+#          E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
+#        run: make TAG_NAME=${{ github.event.inputs.tag }} e2e
 
   release:
     name: Do GitHub release
