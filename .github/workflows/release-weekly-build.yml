@@ -19,10 +19,10 @@ jobs:
     env:
       GO111MODULE: "on"
     steps:
-      - name: Set up Go 1.15
+      - name: Set up Go 1.22
         uses: actions/setup-go@v1
         with:
-          go-version: 1.15
+          go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
@@ -41,10 +41,10 @@ jobs:
     env:
       GO111MODULE: "on"
     steps:
-      - name: Set up Go 1.15
+      - name: Set up Go 1.22
         uses: actions/setup-go@v1
         with:
-          go-version: 1.15
+          go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
@@ -78,10 +78,10 @@ jobs:
       GITHUB_WORKFLOW_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
-      - name: Set up Go 1.15
+      - name: Set up Go 1.22
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15
+          go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
@@ -101,7 +101,7 @@ jobs:
         env:
           E2E_HUB_USERNAME: ${{ secrets.E2E_HUB_USERNAME }}
           E2E_HUB_TOKEN: ${{ secrets.E2E_HUB_TOKEN }}
-        run: make TAG_NAME=${{ github.event.inputs.tag }} -f builder.Makefile e2e
+        run: make TAG_NAME=${{ github.event.inputs.tag }} e2e
 
   release:
     name: Do GitHub release
