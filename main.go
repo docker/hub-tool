@@ -77,7 +77,7 @@ func main() {
 
 func newSigContext() (context.Context, func()) {
 	ctx, cancel := context.WithCancel(context.Background())
-	s := make(chan os.Signal)
+	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-s

@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -136,7 +136,7 @@ func (c *Client) getToken(password string, anonymous bool) (string, error) {
 		return "", errors.New("unable to get authorization token")
 	}
 
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

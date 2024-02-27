@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/distribution/reference"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/distribution/reference"
 	"github.com/docker/hub-tool/internal/ansi"
 	"github.com/docker/hub-tool/internal/errdef"
 	"github.com/docker/hub-tool/internal/metrics"

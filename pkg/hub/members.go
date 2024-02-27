@@ -31,13 +31,13 @@ const (
 	MembersPerTeamURL = "/v2/orgs/%s/groups/%s/members/"
 )
 
-//Member is a user part of an organization
+// Member is a user part of an organization
 type Member struct {
 	Username string `json:"username"`
 	FullName string `json:"full_name"`
 }
 
-//GetMembers lists all the members in an organization
+// GetMembers lists all the members in an organization
 func (c *Client) GetMembers(organization string) ([]Member, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(MembersURL, organization))
 	if err != nil {

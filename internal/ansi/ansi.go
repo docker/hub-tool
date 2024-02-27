@@ -27,10 +27,10 @@ import (
 
 var (
 	// Outputs ANSI color if stdout is a tty
-	Red    = makeColorFunc("red")
-	Yellow = makeColorFunc("yellow")
-	Blue   = makeColorFunc("blue")
-	Green  = makeColorFunc("green")
+	red    = makeColorFunc("red")
+	yellow = makeColorFunc("yellow")
+	blue   = makeColorFunc("blue")
+	green  = makeColorFunc("green")
 )
 
 func makeColorFunc(color string) func(string) string {
@@ -56,32 +56,32 @@ func isColorEnabled() bool {
 	}
 
 	// TODO ignores cmd.OutOrStdout
-	return IsTerminal(os.Stdout)
+	return isTerminal(os.Stdout)
 }
 
-var IsTerminal = func(f *os.File) bool {
-	return isatty.IsTerminal(f.Fd()) || IsCygwinTerminal(f)
+var isTerminal = func(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isCygwinTerminal(f)
 }
 
-func IsCygwinTerminal(f *os.File) bool {
+func isCygwinTerminal(f *os.File) bool {
 	return isatty.IsCygwinTerminal(f.Fd())
 }
 
 var (
 	// Title color should be used for any important title
-	Title = Green
+	Title = green
 	// Header color should be used for all the listing column headers
-	Header = Blue
+	Header = blue
 	// Key color should be used for all key title content
-	Key = Blue
+	Key = blue
 	// Info color should be used when we prompt an info
-	Info = Blue
+	Info = blue
 	// Warn color should be used when we warn the user
-	Warn = Yellow
+	Warn = yellow
 	// Error color should be used when something bad happened
-	Error = Red
+	Error = red
 	// Emphasise color should be used with important content
-	Emphasise = Green
+	Emphasise = green
 	// NoColor doesn't add any colors to the output
 	NoColor = noop
 )

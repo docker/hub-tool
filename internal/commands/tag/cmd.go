@@ -28,7 +28,7 @@ const (
 	tagName = "tag"
 )
 
-//NewTagCmd configures the tag manage command
+// NewTagCmd configures the tag manage command
 func NewTagCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   tagName,

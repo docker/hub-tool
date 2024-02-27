@@ -22,14 +22,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//Consumption represents current user or org consumption
+// Consumption represents current user or org consumption
 type Consumption struct {
 	Seats               int
 	PrivateRepositories int
 	Teams               int
 }
 
-//GetOrgConsumption return the current organization consumption
+// GetOrgConsumption return the current organization consumption
 func (c *Client) GetOrgConsumption(org string) (*Consumption, error) {
 	var (
 		members      int
@@ -78,7 +78,7 @@ func (c *Client) GetOrgConsumption(org string) (*Consumption, error) {
 	}, nil
 }
 
-//GetUserConsumption return the current user consumption
+// GetUserConsumption return the current user consumption
 func (c *Client) GetUserConsumption(user string) (*Consumption, error) {
 	c.fetchAllElements = true
 	privateRepos := 0

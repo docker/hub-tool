@@ -28,7 +28,7 @@ const (
 	UserURL = "/v2/user/"
 )
 
-//Account represents a user or organization information
+// Account represents a user or organization information
 type Account struct {
 	ID       string
 	Name     string
@@ -38,7 +38,7 @@ type Account struct {
 	Joined   time.Time
 }
 
-//GetUserInfo returns the information on the user retrieved from Hub
+// GetUserInfo returns the information on the user retrieved from Hub
 func (c *Client) GetUserInfo() (*Account, error) {
 	u, err := url.Parse(c.domain + UserURL)
 	if err != nil {

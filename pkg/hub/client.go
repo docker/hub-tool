@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -225,7 +224,7 @@ func (c *Client) Login(username string, password string, twoFactorCodeProvider f
 		return "", "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", err
 	}
@@ -282,7 +281,7 @@ func (c *Client) getTwoFactorToken(token string, twoFactorCodeProvider func() (s
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", err
 	}
@@ -320,7 +319,7 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		if resp.StatusCode == http.StatusForbidden {
 			return nil, &forbiddenError{}
 		}
-		buf, err := ioutil.ReadAll(resp.Body)
+		buf, err := io.ReadAll(resp.Body)
 		log.Debugf("bad status code %q: %s", resp.Status, buf)
 		if err == nil {
 			if ok, err := extractError(buf, resp); ok {
@@ -329,7 +328,7 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 		}
 		return nil, fmt.Errorf("bad status code %q", resp.Status)
 	}
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	log.Tracef("HTTP response body: %s", buf)
 	if err != nil {
 		return nil, err

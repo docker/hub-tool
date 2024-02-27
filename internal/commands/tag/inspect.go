@@ -31,9 +31,9 @@ import (
 	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
+	"github.com/distribution/reference"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/distribution/reference"
 	"github.com/docker/go-units"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
@@ -52,7 +52,7 @@ type inspectOptions struct {
 	platform string
 }
 
-//Image is the combination of a manifest and its config object
+// Image is the combination of a manifest and its config object
 type Image struct {
 	Name       string
 	Manifest   ocispec.Manifest
@@ -60,7 +60,7 @@ type Image struct {
 	Descriptor ocispec.Descriptor
 }
 
-//Index is the combination of an OCI index and its descriptor
+// Index is the combination of an OCI index and its descriptor
 type Index struct {
 	Name       string
 	Index      ocispec.Index

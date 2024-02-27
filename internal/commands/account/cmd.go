@@ -28,7 +28,7 @@ const (
 	accountName = "account"
 )
 
-//NewAccountCmd configures the org manage command
+// NewAccountCmd configures the org manage command
 func NewAccountCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   accountName,

@@ -26,9 +26,9 @@ import (
 
 	"github.com/docker/hub-tool/internal/errdef"
 
+	"github.com/distribution/reference"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/distribution/reference"
 	"github.com/spf13/cobra"
 
 	"github.com/docker/hub-tool/internal/ansi"

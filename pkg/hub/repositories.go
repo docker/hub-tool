@@ -29,7 +29,7 @@ const (
 	RepositoriesURL = "/v2/repositories/"
 )
 
-//Repository represents a Docker Hub repository
+// Repository represents a Docker Hub repository
 type Repository struct {
 	Name        string
 	Description string
@@ -39,7 +39,7 @@ type Repository struct {
 	IsPrivate   bool
 }
 
-//GetRepositories lists all the repositories a user can access
+// GetRepositories lists all the repositories a user can access
 func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	if account == "" {
 		account = c.account
@@ -74,7 +74,7 @@ func (c *Client) GetRepositories(account string) ([]Repository, int, error) {
 	return repos, total, nil
 }
 
-//RemoveRepository removes a repository on Hub
+// RemoveRepository removes a repository on Hub
 func (c *Client) RemoveRepository(repository string) error {
 	repositoryURL := fmt.Sprintf("%s%s%s/", c.domain, RepositoriesURL, repository)
 	req, err := http.NewRequest(http.MethodDelete, repositoryURL, nil)
@@ -140,7 +140,7 @@ type hubRepositoryResult struct {
 	User           string         `json:"user"`
 }
 
-//RepositoryType lists all the different repository types handled by the Docker Hub
+// RepositoryType lists all the different repository types handled by the Docker Hub
 type RepositoryType string
 
 const (

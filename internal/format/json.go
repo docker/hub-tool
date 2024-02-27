@@ -24,20 +24,20 @@ import (
 	"github.com/spf13/pflag"
 )
 
-//Option handles format flags and printing the values depending the format
+// Option handles format flags and printing the values depending the format
 type Option struct {
 	format string
 }
 
-//PrettyPrinter prints all the values in a pretty print format
+// PrettyPrinter prints all the values in a pretty print format
 type PrettyPrinter func(io.Writer, interface{}) error
 
-//AddFormatFlag add the format flag to a command
+// AddFormatFlag add the format flag to a command
 func (o *Option) AddFormatFlag(flags *pflag.FlagSet) {
 	flags.StringVar(&o.format, "format", "", `Print values using a custom format ("json")`)
 }
 
-//Print outputs values depending the given format
+// Print outputs values depending the given format
 func (o *Option) Print(out io.Writer, values interface{}, prettyPrinter PrettyPrinter) error {
 	switch o.format {
 	case "":
