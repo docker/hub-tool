@@ -34,13 +34,13 @@ const (
 	FreePlan = "free"
 )
 
-//Plan represents the current account Hub plan
+// Plan represents the current account Hub plan
 type Plan struct {
 	Name   string
 	Limits Limits
 }
 
-//Limits represents the current account limits
+// Limits represents the current account limits
 type Limits struct {
 	Seats          int
 	PrivateRepos   int
@@ -49,7 +49,7 @@ type Limits struct {
 	ParallelBuilds int
 }
 
-//GetHubPlan returns an account current Hub plan
+// GetHubPlan returns an account current Hub plan
 func (c *Client) GetHubPlan(accountID string) (*Plan, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(HubPlanURL, accountID))
 	if err != nil {

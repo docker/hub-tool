@@ -26,7 +26,6 @@ import (
 	"github.com/docker/cli/cli/config/configfile"
 	clitypes "github.com/docker/cli/cli/config/types"
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
 	"gotest.tools/v3/icmd"
 )
@@ -48,10 +47,10 @@ func hubToolCmd(t *testing.T, args ...string) (icmd.Cmd, func()) {
 	assert.NilError(t, err)
 	hubTool := os.Getenv("BINARY")
 	configDir := fs.NewDir(t, t.Name(), fs.WithFile("config.json", string(data)))
-	cleanup := env.Patch(t, "PATH", os.Getenv("PATH")+getPathSeparator()+filepath.Join(pwd, "..", "bin"))
+	t.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+filepath.Join(pwd, "..", "bin"))
 	env := append(os.Environ(), "DOCKER_CONFIG="+configDir.Path())
 
-	return icmd.Cmd{Command: append([]string{hubTool}, args...), Env: env}, func() { cleanup(); configDir.Remove() }
+	return icmd.Cmd{Command: append([]string{hubTool}, args...), Env: env}, func() { configDir.Remove() }
 }
 
 func getPathSeparator() string {

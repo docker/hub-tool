@@ -28,7 +28,7 @@ const (
 	repoName = "repo"
 )
 
-//NewRepoCmd configures the repo manage command
+// NewRepoCmd configures the repo manage command
 func NewRepoCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   repoName,

@@ -22,7 +22,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 )
 
-//Instance stores all the specific pieces needed to dialog with Hub
+// Instance stores all the specific pieces needed to dialog with Hub
 type Instance struct {
 	APIHubBaseURL string
 	RegistryInfo  *registry.IndexInfo

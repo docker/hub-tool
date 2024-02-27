@@ -18,25 +18,70 @@ package ansi
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/cli/cli/utils"
+	"github.com/cli/cli/pkg/iostreams"
+	"github.com/mattn/go-isatty"
+	"github.com/mgutz/ansi"
 )
 
 var (
+	// Outputs ANSI color if stdout is a tty
+	red    = makeColorFunc("red")
+	yellow = makeColorFunc("yellow")
+	blue   = makeColorFunc("blue")
+	green  = makeColorFunc("green")
+)
+
+func makeColorFunc(color string) func(string) string {
+	cf := ansi.ColorFunc(color)
+	return func(arg string) string {
+		if isColorEnabled() {
+			if color == "black+h" && iostreams.Is256ColorSupported() {
+				return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, arg)
+			}
+			return cf(arg)
+		}
+		return arg
+	}
+}
+
+func isColorEnabled() bool {
+	if iostreams.EnvColorForced() {
+		return true
+	}
+
+	if iostreams.EnvColorDisabled() {
+		return false
+	}
+
+	// TODO ignores cmd.OutOrStdout
+	return isTerminal(os.Stdout)
+}
+
+var isTerminal = func(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isCygwinTerminal(f)
+}
+
+func isCygwinTerminal(f *os.File) bool {
+	return isatty.IsCygwinTerminal(f.Fd())
+}
+
+var (
 	// Title color should be used for any important title
-	Title = utils.Green
+	Title = green
 	// Header color should be used for all the listing column headers
-	Header = utils.Blue
+	Header = blue
 	// Key color should be used for all key title content
-	Key = utils.Blue
+	Key = blue
 	// Info color should be used when we prompt an info
-	Info = utils.Blue
+	Info = blue
 	// Warn color should be used when we warn the user
-	Warn = utils.Yellow
+	Warn = yellow
 	// Error color should be used when something bad happened
-	Error = utils.Red
+	Error = red
 	// Emphasise color should be used with important content
-	Emphasise = utils.Green
+	Emphasise = green
 	// NoColor doesn't add any colors to the output
 	NoColor = noop
 )

@@ -13,11 +13,11 @@
 #   limitations under the License.
 
 # Pinned Versions
-GO_VERSION=1.16.3-alpine
+GO_VERSION=1.22.0-alpine3.19
 CLI_VERSION=20.10.2
 ALPINE_VERSION=3.12.2
-GOLANGCI_LINT_VERSION=v1.33.0-alpine
-GOTESTSUM_VERSION=0.6.0
+GOLANGCI_LINT_VERSION=v1.56.2-alpine
+GOTESTSUM_VERSION=1.11.0
 
 GOOS?=$(shell go env GOOS)
 GOARCH?=$(shell go env GOARCH)

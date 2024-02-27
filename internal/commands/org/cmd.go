@@ -28,7 +28,7 @@ const (
 	orgName = "org"
 )
 
-//NewOrgCmd configures the org manage command
+// NewOrgCmd configures the org manage command
 func NewOrgCmd(streams command.Streams, hubClient *hub.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   orgName,

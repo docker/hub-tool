@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 	DeleteTagURL = "/v2/repositories/%s/tags/%s/"
 )
 
-//Tag can point to a manifest or manifest list
+// Tag can point to a manifest or manifest list
 type Tag struct {
 	Name                string
 	FullSize            int
@@ -45,7 +45,7 @@ type Tag struct {
 	Status              string
 }
 
-//Image represents the metadata of a manifest
+// Image represents the metadata of a manifest
 type Image struct {
 	Digest       string
 	Architecture string
@@ -57,7 +57,7 @@ type Image struct {
 	Status       string
 }
 
-//GetTags calls the hub repo API and returns all the information on all tags
+// GetTags calls the hub repo API and returns all the information on all tags
 func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, int, error) {
 	repoPath, err := getRepoPath(repository)
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *Client) GetTags(repository string, reqOps ...RequestOp) ([]Tag, int, er
 	return tags, total, nil
 }
 
-//RemoveTag removes a tag in a repository on Hub
+// RemoveTag removes a tag in a repository on Hub
 func (c *Client) RemoveTag(repository, tag string) error {
 	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(DeleteTagURL, repository, tag), nil)
 	if err != nil {

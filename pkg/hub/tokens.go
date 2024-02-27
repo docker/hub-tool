@@ -34,7 +34,7 @@ const (
 	TokenURL = "/v2/api_tokens/%s"
 )
 
-//Token is a personal access token. The token field will only be filled at creation and can never been accessed again.
+// Token is a personal access token. The token field will only be filled at creation and can never been accessed again.
 type Token struct {
 	UUID        uuid.UUID
 	ClientID    string
@@ -74,7 +74,7 @@ func (c *Client) CreateToken(description string) (*Token, error) {
 	return &token, nil
 }
 
-//GetTokens calls the hub repo API and returns all the information on all tokens
+// GetTokens calls the hub repo API and returns all the information on all tokens
 func (c *Client) GetTokens() ([]Token, int, error) {
 	u, err := url.Parse(c.domain + TokensURL)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *Client) GetTokens() ([]Token, int, error) {
 	return tokens, total, nil
 }
 
-//GetToken calls the hub repo API and returns the information on one token
+// GetToken calls the hub repo API and returns the information on one token
 func (c *Client) GetToken(tokenUUID string) (*Token, error) {
 	req, err := http.NewRequest("GET", c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)
 	if err != nil {
@@ -154,7 +154,7 @@ func (c *Client) UpdateToken(tokenUUID, description string, isActive bool) (*Tok
 	return &token, nil
 }
 
-//RemoveToken deletes a token from personal access token
+// RemoveToken deletes a token from personal access token
 func (c *Client) RemoveToken(tokenUUID string) error {
 	//DELETE https://hub.docker.com/v2/api_tokens/8208674e-d08a-426f-b6f4-e3aba7058459 => 202
 	req, err := http.NewRequest("DELETE", c.domain+fmt.Sprintf(TokenURL, tokenUUID), nil)

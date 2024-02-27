@@ -35,7 +35,7 @@ const (
 	OrganizationInfoURL = "/v2/orgs/%s"
 )
 
-//Organization represents a Docker Hub organization
+// Organization represents a Docker Hub organization
 type Organization struct {
 	Namespace string
 	FullName  string
@@ -44,7 +44,7 @@ type Organization struct {
 	Members   []Member
 }
 
-//GetOrganizations lists all the organizations a user has joined
+// GetOrganizations lists all the organizations a user has joined
 func (c *Client) GetOrganizations(ctx context.Context) ([]Organization, error) {
 	u, err := url.Parse(c.domain + OrganizationsURL)
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *Client) GetOrganizations(ctx context.Context) ([]Organization, error) {
 	return organizations, nil
 }
 
-//GetOrganizationInfo returns organization info
+// GetOrganizationInfo returns organization info
 func (c *Client) GetOrganizationInfo(orgname string) (*Account, error) {
 	u, err := url.Parse(c.domain + fmt.Sprintf(OrganizationInfoURL, orgname))
 	if err != nil {

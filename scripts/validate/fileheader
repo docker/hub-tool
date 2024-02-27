@@ -19,7 +19,7 @@ set -eu -o pipefail
 
 if ! command -v ltag; then
     >&2 echo "ERROR: ltag not found. Install with:"
-    >&2 echo "    go get -u github.com/kunalkushwaha/ltag"
+    >&2 echo "    go install github.com/kunalkushwaha/ltag@latest"
     exit 1
 fi
 
