@@ -26,7 +26,7 @@ if err != nil {
 }
 ```
 
-After a successfull login, it is quite easy to do any action possible and listed inside `pkg/` directory.
+After a successful login, it is quite easy to do any action possible and listed inside `pkg/` directory.
 
 ### Removing a tag
 
