@@ -326,17 +326,13 @@ func (c *Client) doRequest(req *http.Request, reqOps ...RequestOp) ([]byte, erro
 				return nil, err
 			}
 		}
-		return nil, fmt.Errorf("bad status code %q", resp.Status)
+		return nil, fmt.Errorf("bad status code %q: %s", resp.Status, buf)
 	}
 	buf, err := io.ReadAll(resp.Body)
 	log.Tracef("HTTP response body: %s", buf)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("bad status code %q: %s", resp.Status, string(buf))
-	}
-
 	return buf, nil
 }
 
