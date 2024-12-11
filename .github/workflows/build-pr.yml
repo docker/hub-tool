@@ -1,4 +1,4 @@
-name: Build PR
+[![Build PR](https://github.com/docker/hub-tool/actions/workflows/build-pr.yml/badge.svg?event=issues)](https://github.com/docker/hub-tool/actions/workflows/build-pr.yml)name: Build PR
 on: [pull_request]
 
 jobs:
