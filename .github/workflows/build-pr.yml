@@ -10,13 +10,13 @@ jobs:
       GO111MODULE: "on"
     steps:
       - name: Set up Go 1.22
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@0caeaed6fd66a828038c2da3c0f662a42862658f # v1
         with:
           go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Check license headers
         run: make validate
@@ -37,13 +37,13 @@ jobs:
         run: docker version
 
       - name: Set up Go 1.22
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@0caeaed6fd66a828038c2da3c0f662a42862658f # v1
         with:
           go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Build CLI
         run: make build

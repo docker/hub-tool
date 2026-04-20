@@ -20,13 +20,13 @@ jobs:
       GO111MODULE: "on"
     steps:
       - name: Set up Go 1.22
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@0caeaed6fd66a828038c2da3c0f662a42862658f # v1
         with:
           go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Check license headers
         run: make validate
@@ -42,13 +42,13 @@ jobs:
       GO111MODULE: "on"
     steps:
       - name: Set up Go 1.22
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@0caeaed6fd66a828038c2da3c0f662a42862658f # v1
         with:
           go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Unit test
         run: make test-unit
@@ -57,7 +57,7 @@ jobs:
         run: make TAG_NAME=${{ github.event.inputs.tag }} package-cross
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2 # v2
         with:
           name: hub-tool-packages
           path: ./dist/*
@@ -79,18 +79,18 @@ jobs:
 
     steps:
       - name: Set up Go 1.22
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
         with:
           go-version: 1.22
         id: go
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
         with:
           ref: ${{ github.event.inputs.branch }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@cbed621e49e4c01b044d60f6c80ea4ed6328b281 # v2
         with:
           path: dist
 
@@ -111,12 +111,12 @@ jobs:
     if: ${{ github.event.inputs.tag != '' }} # don't release if no tag is specified
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@cbed621e49e4c01b044d60f6c80ea4ed6328b281 # v2
         with:
           path: dist
 
       - name: Ship it
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           artifacts: "dist/*/*"
           prerelease: true
